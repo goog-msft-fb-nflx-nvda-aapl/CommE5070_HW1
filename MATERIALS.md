@@ -8,51 +8,77 @@ experiment lands.
 - Features: MFCC(20)+delta+delta2, chroma, spectral contrast/centroid/bandwidth/
   rolloff, ZCR, tonnetz — mean+std pooled per track, StandardScaler, kNN/SVM(RBF)/
   RandomForest.
-- Results: TBD — still extracting features on gsm-gpu2 (slow: full-song HPSS for
-  tonnetz is expensive per track, no incremental caching so it's running to
-  completion rather than being restarted).
+- Results (val set, `results/task1/metrics.json` + confusion matrices):
+
+  | classifier | top1 | top3 |
+  |---|---|---|
+  | kNN (k=5, distance-weighted) | 0.403 | 0.623 |
+  | **SVM (RBF)** | **0.593** | **0.831** |
+  | RandomForest (500 trees) | 0.550 | 0.766 |
+
+  SVM(RBF) on hand-crafted features alone (59.3% top1) is competitive with —
+  and beats several of — the from-scratch deep architectures below (sota_crnn
+  58.4%, fgnl 57.1%), a genuinely interesting result worth calling out in the
+  report: careful feature engineering + a classical classifier remains a strong
+  baseline on a dataset this small.
+- Took ~4.5 hours on gsm-gpu2 (single-threaded librosa HPSS/tonnetz on
+  full-length songs is slow, and `SVC(probability=True)`'s internal 5-fold CV
+  compounded it) — noted for next time: chunk/parallelize extraction and cache
+  incrementally rather than only at the end.
 
 ## Task 2 — deep learning
 All models: chunked 5s inputs, song-level prediction via mean-pooled softmax
-across a track's non-overlapping chunks. Val-set top1/top3 as of last check
-(gsm-gpu2, tmux `hw1_singer`; **not final** — some still training):
+across a track's non-overlapping chunks. Final val-set results:
 
-| model | method | val top1 | val top3 | status |
-|---|---|---|---|---|
-| speaker_frontend | Method 3 (ECAPA-TDNN + probe) | **0.896** | — | done (best_epoch=32) |
-| ssl_frontend | Method 2-4 / Baseline 1 (MERT + probe) | 0.684 | — | done (best_epoch=36) |
-| sota_crnn | Method 1 (CRNN, minzwon) | 0.584 | — | done (best_epoch=73) |
-| confound_crnn | Task-2 core / Method 2-2 (CRNN2D_elu2) | ~0.60 | ~0.80 | training, epoch ~73/80 |
-| crnn_zain | Method 2-1 (Zain CRNN2D) | ~0.55 | ~0.80 | training, epoch ~66/80 |
-| fgnl | Method 2-3 (non-local net) | ~0.50 | ~0.81 | training, epoch ~68/80, slowest riser |
+| model | method | val top1 | val top3 |
+|---|---|---|---|
+| **speaker_frontend** | Method 3 (ECAPA-TDNN + probe) | **0.896** | 0.965 (epoch39, best-top1 epoch's top3 not separately logged) |
+| ssl_frontend | Method 2-4 / Baseline 1 (MERT + probe) | 0.684 | — |
+| confound_crnn_vocals | Method 2-2 ablation (CRNN2D_elu2, demucs vocals-only) | 0.671 | 0.857 |
+| confound_crnn | Task-2 core / Method 2-2 (CRNN2D_elu2, raw mixture) | 0.649 | 0.853 |
+| crnn_zain | Method 2-1 (Zain CRNN2D) | 0.619 | 0.835 |
+| sota_crnn | Method 1 (CRNN, minzwon) | 0.584 | — |
+| fgnl | Method 2-3 (non-local net) | 0.571 | 0.853 |
 
-Best model so far: **speaker_frontend** (frozen VoxCeleb-pretrained ECAPA-TDNN +
-MLP probe) — notably stronger than the music-domain SSL (MERT) and all
-from-scratch CRNNs, on this ~950-track training set. Worth discussing in the
-report: pretrained speaker-verification embeddings transferring from spoken to
-sung voice (Method 3's premise) outperformed training from scratch here, echoing
-what the deep-research synthesis below found in the literature.
+Best model overall: **speaker_frontend** (frozen VoxCeleb-pretrained ECAPA-TDNN
++ MLP probe) — notably stronger than the music-domain SSL (MERT) and every
+from-scratch CRNN, on this ~950-track training set. Confusion matrix
+(`results/speaker_frontend/confusion_matrix_speaker_frontend.png`) is strongly
+diagonal; t-SNE (`results/speaker_frontend/tsne.png`) shows clean, tight
+per-artist clusters. Report angle: pretrained speaker-verification embeddings
+transferring from spoken to sung voice (Method 3's premise) beat training from
+scratch here by a wide margin, echoing the deep-research synthesis below.
+
+**Vocal-separation ablation result** (Method 2-2 / doc's Source Separation
+section): demucs vocals-only training (`confound_crnn_vocals`) beat the same
+architecture trained on raw mixtures by **+2.2pp top1 (67.1% vs 64.9%)** and
++0.4pp top3 (85.7% vs 85.3%) — a real but modest improvement, nowhere near the
+Gemini source's claimed 25pp jump, and the opposite direction from Qwen's
+"expect negative" prediction. This directly validates the "don't assume,
+measure" framing from the Deep Research synthesis below — all three engines'
+priors were at least partly wrong for our specific setup.
 
 ## Deep Research synthesis (relayed by user, 2026-08-29, 3 engines: Gemini,
 Perplexity, Qwen — full responses in `deep_research_response_*.md`)
 
-**On vocal source separation (our ablation is running, `results/*_vocals`
-TBD)**: the three engines *disagree* with each other, which is itself the
-finding worth reporting — don't assume a direction, measure it:
+**On vocal source separation** — the three engines *disagreed* with each
+other going in, which is itself the finding worth reporting, and our own
+measured result (`confound_crnn_vocals`: +2.2pp top1, see Task 2 table above)
+landed in between all three priors:
 - Gemini's sources report raw-mixture Artist20 baselines of only ~56-60%,
-  jumping to 80-85%+ after vocal separation.
+  jumping to 80-85%+ after vocal separation — we saw nothing like this
+  magnitude.
 - Perplexity cites the original bill317996/Hsieh et al. paper directly: vocal-
   only *alone* actually **reduced** song-level F1 from 0.67 to 0.61 vs. the raw
   mixture; only the *combined* (original + vocal-only + cross-song remix) data
-  condition improved to 0.74. Separation-alone is not reliably beneficial.
-- Qwen expects separation to show "marginal or negative effect size" due to
-  demucs artifacts (musical noise, phase smearing) destroying fine formant
-  structure, and flags pitch-shifting in particular as *detrimental* to singer
-  ID (a singer's F0 habits are an identity cue, not noise to augment away).
-- **Takeaway for our own vocals-only ablation once it finishes**: report the
-  actual delta vs. `confound_crnn` trained on raw mixtures, and interpret an
-  improvement *or* a regression as informative either way — don't editorialize
-  toward the "separation helps" prior most people walk in with.
+  condition improved to 0.74 — we saw a (small) improvement from vocals-only
+  alone, the opposite of their alone-vs-raw direction.
+- Qwen expects separation to show "marginal or negative effect size" — we saw
+  marginal, but positive, not negative.
+- **Takeaway**: none of the three secondhand literature summaries predicted
+  our actual result correctly in both direction and magnitude — a clean
+  illustration of why the measured, architecture-specific result is what
+  belongs in the report, not any single source's claim.
 
 **Best candidate not implemented this pass**: `SonyCSLParis/ssl-singer-identity`
 (Torres, Lattner & Richard, ISMIR 2023 / arXiv:2401.05064) — an EfficientNet-B0
@@ -86,7 +112,11 @@ detail — not pursued, listed for report completeness):
   training-objective ablation rather than a new encoder.
 
 ## Visualizations
-- t-SNE embedding plot: TBD (once a final best model is picked)
+- t-SNE embedding plot: `results/speaker_frontend/tsne.png` (best model, val
+  set) — clean, tight per-artist clusters.
+- Confusion matrices: `results/speaker_frontend/confusion_matrix_*.png` (best
+  model, strongly diagonal), plus one per Task-1 classifier and per Task-2
+  model in their respective `results/<name>/` dirs.
 - Mel-spectrogram + own-recording inference: TBD (blocked on user-supplied clip,
   intentionally last per user instruction)
 

@@ -61,6 +61,10 @@ def main():
     ap.add_argument("--device", default="cuda" if torch.cuda.is_available() else "cpu")
     args = ap.parse_args()
 
+    import os
+
+    os.makedirs(os.path.dirname(args.out_path) or ".", exist_ok=True)
+
     from transformers import Qwen2AudioForConditionalGeneration, AutoProcessor
 
     with open(f"{args.data_index_dir}/labels.json") as f:
@@ -92,7 +96,7 @@ def main():
             {"role": "user", "content": [{"type": "audio", "audio_url": "clip"}, {"type": "text", "text": system_prompt}]}
         ]
         chat_prompt = processor.apply_chat_template(conversation, add_generation_prompt=True, tokenize=False)
-        inputs = processor(text=chat_prompt, audios=[clip], sampling_rate=SR, return_tensors="pt").to(args.device)
+        inputs = processor(text=chat_prompt, audio=[clip], sampling_rate=SR, return_tensors="pt").to(args.device)
 
         with torch.no_grad():
             out = model.generate(**inputs, max_new_tokens=64)
