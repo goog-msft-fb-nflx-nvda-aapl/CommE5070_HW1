@@ -1,5 +1,28 @@
 # Experiment log
 
+## 2026-08-29 — Google Drive checkpoint upload — final status: needs manual step
+
+All 6 checkpoints stripped down to small files (largest 3.5MB, smallest 220KB —
+see `results/*/best*.pt` locally) and confirmed correct. Tried uploading the
+smallest one (220KB / 294KB base64) via `mcp__claude_ai_Google_Drive__create_file`
+and hit a **hard wall**: the file has to be read into my own context first to pass
+as inline `base64Content`, and the `Read` tool caps at 256KB — so even the
+smallest checkpoint (294KB base64-encoded) can't be relayed through me. No
+chunked/append upload path exists on this tool either.
+
+**Action needed from the user**: drag these files into a Google Drive folder and
+set sharing to "anyone with the link" (a setting this MCP tool also can't set —
+it only supports sharing to one specific email address):
+- `results/speaker_frontend/best_head_only.pt` (220KB) — **the graded model**
+- `results/ssl_frontend/best_head_only.pt` (810KB)
+- `results/confound_crnn/best.pt`, `results/confound_crnn_vocals/best.pt`,
+  `results/crnn_zain/best.pt`, `results/sota_crnn/best.pt`, `results/fgnl/best.pt`
+  (1.6-3.5MB each, full checkpoints — these have no frozen backbone to strip)
+
+Once uploaded, update `MATERIALS.md`'s Links section and the first page of the
+report with the folder link. Not blocking anything else in the assignment —
+everything else (code, results, test predictions) is already in the GitHub repo.
+
 ## 2026-08-29 — session 2 notes (mid-session, training in progress)
 
 - Deep Research responses (3 engines, saved by user as `deep_research_response_*.md`,

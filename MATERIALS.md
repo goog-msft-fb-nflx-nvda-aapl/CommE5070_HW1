@@ -32,7 +32,7 @@ across a track's non-overlapping chunks. Final val-set results:
 
 | model | method | val top1 | val top3 |
 |---|---|---|---|
-| **speaker_frontend** | Method 3 (ECAPA-TDNN + probe) | **0.896** | 0.965 (epoch39, best-top1 epoch's top3 not separately logged) |
+| **speaker_frontend** | Method 3 (ECAPA-TDNN + probe) | **0.952** | **0.987** |
 | ssl_frontend | Method 2-4 / Baseline 1 (MERT + probe) | 0.684 | — |
 | confound_crnn_vocals | Method 2-2 ablation (CRNN2D_elu2, demucs vocals-only) | 0.671 | 0.857 |
 | confound_crnn | Task-2 core / Method 2-2 (CRNN2D_elu2, raw mixture) | 0.649 | 0.853 |
@@ -48,6 +48,24 @@ diagonal; t-SNE (`results/speaker_frontend/tsne.png`) shows clean, tight
 per-artist clusters. Report angle: pretrained speaker-verification embeddings
 transferring from spoken to sung voice (Method 3's premise) beat training from
 scratch here by a wide margin, echoing the deep-research synthesis below.
+
+**Bug caught and fixed mid-run**: the first `speaker_frontend` training
+(89.6% top1) had a real correctness bug — `requires_grad=False` freezes a
+backbone's *weights*, but not BatchNorm's `running_mean`/`running_var`
+buffers, which still update on every forward pass in `.train()` mode. ECAPA-
+TDNN uses BatchNorm extensively, so the "frozen" backbone was silently
+drifting its normalization statistics onto our small training set every
+epoch. Caught only because stripping the backbone out of the checkpoint for
+a small redistributable file (see Links below) produced wildly different
+predictions than the full checkpoint — a fresh pretrained download no longer
+matched what was actually trained. Fixed by forcing `backbone.eval()` inside
+a `train()` override (already present in `ssl_frontend.py` for a different
+reason — MERT is transformer/LayerNorm-only so was incidentally unaffected);
+retrained, and the *properly* frozen version scored **higher** (95.2% vs
+89.6%) — the drifted stats were actively hurting, not helping. Old
+(buggy-but-still-technically-valid) run kept at
+`results/speaker_frontend_buggy_bn/` for the record. General lesson saved to
+memory for future projects.
 
 **Vocal-separation ablation result** (Method 2-2 / doc's Source Separation
 section): demucs vocals-only training (`confound_crnn_vocals`) beat the same
@@ -154,4 +172,5 @@ per track for inspection).
 
 ## Links
 - GitHub: https://github.com/goog-msft-fb-nflx-nvda-aapl/CommE5070_HW1
-- Checkpoint (Google Drive): TBD
+- Checkpoint (Google Drive): TBD — needs a manual upload, see EXPERIMENT_LOG.md
+  ("Google Drive checkpoint upload — final status")

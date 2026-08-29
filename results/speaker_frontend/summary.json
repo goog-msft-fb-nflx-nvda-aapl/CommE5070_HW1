@@ -1,0 +1,6 @@
+{
+  "model": "speaker_frontend",
+  "best_epoch": 30,
+  "top1": 0.9523809523809523,
+  "top3": 0.987012987012987
+}
