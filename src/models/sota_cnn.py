@@ -12,6 +12,16 @@ Adaptation from the original (multi-label tagging) to this assignment
 raw logits (paired with `nn.CrossEntropyLoss` instead of the original's
 per-tag BCE), `n_class` defaults to 20. Everything else (spectrogram
 front-end params, conv/pool/RNN layer shapes) is unchanged.
+
+Scope note: `FCN`'s pooling schedule ((2,4),(2,4),(2,4),(3,5),(4,4) — a
+total 1280x time downsample) needs at least ~20s of audio at this n_fft/hop
+to avoid the time axis collapsing to 0; it was originally trained on long
+MTAT clips. Our unified chunking (src/data/dataset.py) uses 5s chunks
+across every method for a fair, consistent comparison, which `FCN`
+structurally cannot consume — verified by a dry run (RuntimeError: output
+size too small). `FCN` is kept here for completeness/citation but is not
+used in the trained model comparison; `CRNN` (same repo, same Method 1
+citation) is used instead and runs fine at 5s.
 """
 import torch.nn as nn
 import torchaudio
