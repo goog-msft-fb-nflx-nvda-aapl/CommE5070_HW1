@@ -34,11 +34,15 @@ across a track's non-overlapping chunks. Final val-set results:
 |---|---|---|---|
 | **speaker_frontend** | Method 3 (ECAPA-TDNN + probe) | **0.952** | **0.987** |
 | ssl_frontend | Method 2-4 / Baseline 1 (MERT + probe) | 0.684 | — |
+| confound_crnn | Task-2 core / Method 2-2 (CRNN2D_elu2, raw mixture) | 0.671 | 0.823 |
 | confound_crnn_vocals | Method 2-2 ablation (CRNN2D_elu2, demucs vocals-only) | 0.671 | 0.857 |
-| confound_crnn | Task-2 core / Method 2-2 (CRNN2D_elu2, raw mixture) | 0.649 | 0.853 |
 | crnn_zain | Method 2-1 (Zain CRNN2D) | 0.619 | 0.835 |
 | sota_crnn | Method 1 (CRNN, minzwon) | 0.584 | — |
 | fgnl | Method 2-3 (non-local net) | 0.571 | 0.853 |
+
+(`confound_crnn`'s number here was corrected after an unrelated bug — see
+"Ghost retrain" note just below the vocal-separation writeup. The originally-
+reported 0.649/0.853 no longer reflects the checkpoint actually on disk.)
 
 Best model overall: **speaker_frontend** (frozen VoxCeleb-pretrained ECAPA-TDNN
 + MLP probe) — notably stronger than the music-domain SSL (MERT) and every
@@ -68,35 +72,60 @@ retrained, and the *properly* frozen version scored **higher** (95.2% vs
 memory for future projects.
 
 **Vocal-separation ablation result** (Method 2-2 / doc's Source Separation
-section): demucs vocals-only training (`confound_crnn_vocals`) beat the same
-architecture trained on raw mixtures by **+2.2pp top1 (67.1% vs 64.9%)** and
-+0.4pp top3 (85.7% vs 85.3%) — a real but modest improvement, nowhere near the
-Gemini source's claimed 25pp jump, and the opposite direction from Qwen's
-"expect negative" prediction. This directly validates the "don't assume,
-measure" framing from the Deep Research synthesis below — all three engines'
-priors were at least partly wrong for our specific setup.
+section): demucs vocals-only training (`confound_crnn_vocals`) tied the same
+architecture trained on raw mixtures on top1 (0.671 both) and beat it on top3
+by **+3.5pp (0.857 vs 0.823)** — a real but narrow, metric-dependent effect,
+nowhere near the Gemini source's claimed 25pp jump, and not a clean "separation
+wins" story either (top1 literally identical). See `results/analysis/` for the
+per-artist breakdown and fix/damage transition matrix that explains what that
+tie is actually made of.
+
+**"Ghost retrain" — a data-integrity incident, corrected**: `confound_crnn`'s
+originally-reported 0.649/0.853 turned out to be stale. While Task 1's ~4.5-hour
+feature extraction was still running in tmux window `:0`, a `src.train
+--model confound_crnn` command got queued as pending input in that same busy
+window (sent there before a dedicated window was created and used instead for
+the real run). tmux doesn't discard queued input — it fires once the pane frees
+up. When Task 1 finally finished hours later, that queued command silently
+fired and **retrained `confound_crnn` a second time into the same `--out_dir`**,
+overwriting the first run's checkpoint/log/summary with a different (different-
+seed, otherwise identical-config) result. Not noticed until a later
+cross-check ([[feedback_tmux_queued_input]], saved to memory) found the
+checkpoint's `best_epoch` no longer matched what had been recorded right after
+the original run. The checkpoint currently on disk (0.671/0.823) is verified
+self-consistent across the training log, `summary.json`, and a fresh
+independent re-evaluation — it's what's actually reproducible, so it's what's
+reported here; the original 0.649/0.853 run no longer exists to recover. Not a
+correctness bug in the model or pipeline, and doesn't affect the graded
+submission (that's from `speaker_frontend`, trained in its own dedicated
+window, unaffected) — but worth disclosing plainly rather than quietly editing
+the number.
 
 ## Deep Research synthesis (relayed by user, 2026-08-29, 3 engines: Gemini,
 Perplexity, Qwen — full responses in `deep_research_response_*.md`)
 
 **On vocal source separation** — the three engines *disagreed* with each
 other going in, which is itself the finding worth reporting, and our own
-measured result (`confound_crnn_vocals`: +2.2pp top1, see Task 2 table above)
-landed in between all three priors:
+measured result (`confound_crnn_vocals`: top1 tied, +3.5pp top3, see Task 2
+table above) landed closer to "mixed/metric-dependent" than any single prior:
 - Gemini's sources report raw-mixture Artist20 baselines of only ~56-60%,
   jumping to 80-85%+ after vocal separation — we saw nothing like this
   magnitude.
 - Perplexity cites the original bill317996/Hsieh et al. paper directly: vocal-
   only *alone* actually **reduced** song-level F1 from 0.67 to 0.61 vs. the raw
   mixture; only the *combined* (original + vocal-only + cross-song remix) data
-  condition improved to 0.74 — we saw a (small) improvement from vocals-only
-  alone, the opposite of their alone-vs-raw direction.
+  condition improved to 0.74 — our top1 was flat rather than reduced, so also
+  doesn't match their alone-vs-raw direction.
 - Qwen expects separation to show "marginal or negative effect size" — we saw
-  marginal, but positive, not negative.
+  marginal, and on top3 specifically positive, not negative.
 - **Takeaway**: none of the three secondhand literature summaries predicted
   our actual result correctly in both direction and magnitude — a clean
   illustration of why the measured, architecture-specific result is what
-  belongs in the report, not any single source's claim.
+  belongs in the report, not any single source's claim. (The follow-up Deep
+  Research round, see below, converged on the same message from a different
+  angle: published Artist20 separation results range from clearly-helps to
+  clearly-hurts depending on protocol, so ours landing in between isn't an
+  outlier.)
 
 **Best candidate not implemented this pass**: `SonyCSLParis/ssl-singer-identity`
 (Torres, Lattner & Richard, ISMIR 2023 / arXiv:2401.05064) — an EfficientNet-B0
@@ -134,7 +163,7 @@ Qwen2-Audio-7B-Instruct, prompted with a 15s clip + the closed list of 20
 artist names, asked to rank its top-3 guesses (no training/fine-tuning).
 On 40 val tracks: **top1=0.475, top3=0.700** — below the trained models but
 surprisingly close to several from-scratch CRNNs (crnn_zain 0.619,
-confound_crnn 0.649), and far above the 5%/15% random-chance floor for 20-way
+confound_crnn 0.671), and far above the 5%/15% random-chance floor for 20-way
 top1/top3, for a model that saw zero gradient steps on this dataset.
 (First pass under-scored this at 0.325/0.525 due to an answer-parsing bug —
 the prompt asked the model to reply with underscored label names like
