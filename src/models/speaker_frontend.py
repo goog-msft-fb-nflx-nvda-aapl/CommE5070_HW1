@@ -38,6 +38,7 @@ class SpeakerEmbeddingProbe(nn.Module):
         if freeze_backbone:
             for p in self.backbone.mods.parameters():
                 p.requires_grad = False
+            self.backbone.mods.eval()
 
         emb_dim = self.backbone.mods.embedding_model.emb_lin.w.out_features if hasattr(
             self.backbone.mods.embedding_model, "emb_lin"
@@ -58,3 +59,14 @@ class SpeakerEmbeddingProbe(nn.Module):
     def forward(self, x):
         emb = self.embed(x)
         return self.head(emb)
+
+    def train(self, mode=True):
+        super().train(mode)
+        if self.freeze_backbone:
+            # a frozen backbone's requires_grad=False stops gradients, but
+            # BatchNorm buffers (running_mean/var) still update on every
+            # forward pass in train mode regardless of requires_grad — keep
+            # it in eval mode so "frozen" is actually frozen (buffers
+            # included), matching ssl_frontend.py's same guard.
+            self.backbone.mods.eval()
+        return self

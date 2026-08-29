@@ -1,0 +1,63 @@
+CommE5070 HW1 — Singer Classification — inference instructions
+================================================================
+
+Setup
+-----
+    pip install -r requirements.txt
+
+(torch>=2.6 is required — some pretrained checkpoints used by two of the
+models fail to load under HF's safetensors-only `torch.load` policy on
+older torch.)
+
+Data
+----
+Point everything at your local copy of the artist20 dataset (same layout as
+provided: `train.json`, `val.json`, `train_val/<artist>/<album>/*.mp3`,
+`test/*.mp3`). Build the manifest once:
+
+    python -m src.data.prepare_index --data_root /path/to/artist20 --out_dir data/index
+
+Running inference (the graded model)
+-------------------------------------
+The best-performing model is `speaker_frontend` (frozen VoxCeleb-pretrained
+ECAPA-TDNN speaker embedding + a small trained classifier head — see
+`src/models/speaker_frontend.py` for the architecture/citation). Its
+checkpoint at `results/speaker_frontend/best.pt` (or the head-only variant
+linked from the cloud drive) reproduces the submitted `STUDENT_ID.json`:
+
+    python -m src.infer_test --model speaker_frontend \
+        --checkpoint results/speaker_frontend/best.pt \
+        --data_index_dir data/index \
+        --out_path STUDENT_ID.json
+
+This downloads the pretrained ECAPA-TDNN backbone fresh from HuggingFace/
+speechbrain on first run (not bundled — see "Do not upload" in the
+assignment rules) and loads our trained classifier head on top. Output is
+`{"001": [top1, top2, top3], ...}` for all 233 test tracks, top-3 in
+descending confidence order, matching the assignment's schema.
+
+Other models (any of Task 2's `MODEL_REGISTRY` entries in `src/train.py`:
+`confound_crnn`, `crnn_zain`, `sota_crnn`, `fgnl`, `ssl_frontend`,
+`speaker_frontend`) can be run the same way by swapping `--model` and
+`--checkpoint`; see `README.md` for the full command list (training,
+evaluation, t-SNE, mel-spectrogram demo) and `MATERIALS.md` for every
+model's measured results.
+
+Task 1 (traditional ML)
+------------------------
+    python -m src.classical_ml --data_index_dir data/index --out_dir results/task1
+
+Fits kNN/SVM(RBF)/RandomForest on hand-crafted features and reports
+confusion matrix + top1/top3 on the val set (no test-set submission for
+this task, per the assignment's Task 1 spec).
+
+Notes for reproduction
+-----------------------
+- `ssl_frontend` and `speaker_frontend` need `torch>=2.6` specifically
+  (see above); the from-scratch CRNN family (`confound_crnn`, `crnn_zain`,
+  `sota_crnn`, `fgnl`) has no such constraint.
+- All models chunk audio into 5s windows and predict per-track by averaging
+  chunk-level softmax probabilities — see `src/data/dataset.py` and
+  `src/evaluate.py`.
+- Full experiment log, decisions, and citations: `EXPERIMENT_LOG.md` and
+  `MATERIALS.md`.

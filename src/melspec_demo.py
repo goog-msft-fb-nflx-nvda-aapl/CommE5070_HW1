@@ -12,6 +12,7 @@ import os
 
 import torch
 
+from src.checkpoint_utils import load_checkpoint
 from src.data.dataset import SR, _load_waveform, _log_mel_transform, _fixed_length_chunks, CHUNK_SAMPLES
 from src.train import MODEL_REGISTRY
 
@@ -33,8 +34,7 @@ def main():
 
     model_fn, kind = MODEL_REGISTRY[args.model]
     model = model_fn(len(labels)).to(args.device)
-    ckpt = torch.load(args.checkpoint, map_location=args.device, weights_only=True)
-    model.load_state_dict(ckpt["model_state"])
+    load_checkpoint(model, args.checkpoint, args.device)
     model.eval()
 
     wav = _load_waveform(args.audio_path)

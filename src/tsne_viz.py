@@ -14,6 +14,7 @@ import torch
 from sklearn.manifold import TSNE
 from torch.utils.data import DataLoader
 
+from src.checkpoint_utils import load_checkpoint
 from src.data.dataset import MelChunkEvalDataset, WaveformEvalDataset
 from src.train import MODEL_REGISTRY
 
@@ -46,8 +47,7 @@ def main():
 
     model_fn, kind = MODEL_REGISTRY[args.model]
     model = model_fn(len(labels)).to(args.device)
-    ckpt = torch.load(args.checkpoint, map_location=args.device, weights_only=True)
-    model.load_state_dict(ckpt["model_state"])
+    load_checkpoint(model, args.checkpoint, args.device)
 
     split_path = f"{args.data_index_dir}/{args.split}.json"
     ds = MelChunkEvalDataset(split_path) if kind == "mel" else WaveformEvalDataset(split_path)
