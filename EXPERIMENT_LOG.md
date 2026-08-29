@@ -1,5 +1,30 @@
 # Experiment log
 
+## 2026-08-29 — session 2 notes (mid-session, training in progress)
+
+- Deep Research responses (3 engines, saved by user as `deep_research_response_*.md`,
+  now committed) synthesized into `MATERIALS.md`. Key finding to remember when writing
+  up the vocal-separation ablation: the engines *disagree* on whether separation helps
+  or hurts — report our own measured delta, don't assume a direction.
+- **Google Drive checkpoint upload plan**: `mcp__claude_ai_Google_Drive__create_file`
+  only accepts inline `base64Content`/`textContent` (no streaming upload of a large
+  local file), and `share_file` only grants access to a specific `emailAddress`, not
+  Drive's "anyone with the link" permission — so the upload path needs to be small
+  files uploaded through this tool, not a multi-hundred-MB checkpoint. Fix: for
+  `ssl_frontend`/`speaker_frontend` (frozen backbone + trainable head), the deliverable
+  checkpoint should only contain the trainable head's `state_dict` (a few hundred KB),
+  not the full model (which currently includes the frozen MERT/ECAPA backbone weights,
+  ~100s of MB) — the inference script already re-downloads those backbones fresh from
+  HuggingFace via `from_pretrained`, and the assignment explicitly forbids uploading
+  third-party model weights anyway. `train.py`'s current checkpoint save does *not* do
+  this yet (saves full `state_dict()` for every model) — write a small
+  `strip_checkpoint.py` at wrap-up time to re-save only `requires_grad=True` params for
+  the two frozen-backbone models before uploading. CRNN-family checkpoints (fully
+  trained from scratch, 1.5-3.5MB each) don't need this — small enough to upload as-is.
+  If Drive's "anyone with link" truly isn't reachable through this MCP tool, ask the
+  user to flip that one setting manually after upload (should be a single click in the
+  Drive UI), since the tool can't set it.
+
 ## 2026-08-29 — session 1: scaffold + reference ports (paused, offline)
 
 **Status when paused: no GPU job running.** `gsm-gpu2` tmux session `hw1_singer` finished
