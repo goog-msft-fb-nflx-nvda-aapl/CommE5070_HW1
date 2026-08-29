@@ -67,8 +67,10 @@ def main():
     ap.add_argument("--epochs", type=int, default=60)
     ap.add_argument("--batch_size", type=int, default=32)
     ap.add_argument("--lr", type=float, default=1e-3)
+    ap.add_argument("--weight_decay", type=float, default=1e-4)
     ap.add_argument("--patience", type=int, default=10)
     ap.add_argument("--num_workers", type=int, default=8)
+    ap.add_argument("--no_scheduler", action="store_true", help="disable cosine LR decay")
     ap.add_argument("--device", default="cuda" if torch.cuda.is_available() else "cpu")
     args = ap.parse_args()
 
@@ -86,7 +88,8 @@ def main():
         num_workers=args.num_workers, drop_last=True, persistent_workers=args.num_workers > 0,
     )
 
-    opt = torch.optim.Adam(model.parameters(), lr=args.lr)
+    opt = torch.optim.Adam(model.parameters(), lr=args.lr, weight_decay=args.weight_decay)
+    scheduler = None if args.no_scheduler else torch.optim.lr_scheduler.CosineAnnealingLR(opt, T_max=args.epochs)
     criterion = nn.CrossEntropyLoss()
 
     best_top1 = -1.0
@@ -109,11 +112,15 @@ def main():
             total_loss += loss.item()
             n_batches += 1
 
+        if scheduler is not None:
+            scheduler.step()
+
         train_loss = total_loss / max(1, n_batches)
         metrics = evaluate_metrics_only(model, val_ds, args.device, len(labels))
         elapsed = time.time() - t0
 
-        print(f"[{args.model}] epoch={epoch} loss={train_loss:.4f} "
+        cur_lr = opt.param_groups[0]["lr"]
+        print(f"[{args.model}] epoch={epoch} loss={train_loss:.4f} lr={cur_lr:.2e} "
               f"val_top1={metrics['top1']:.4f} val_top3={metrics['top3']:.4f} ({elapsed:.0f}s)")
         history.append({"epoch": epoch, "train_loss": train_loss, **metrics})
 

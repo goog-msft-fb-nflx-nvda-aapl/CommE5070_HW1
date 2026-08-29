@@ -59,12 +59,25 @@ def _fixed_length_chunks(wav, chunk_samples):
     return wav.view(n_chunks, chunk_samples)
 
 
+def _augment_waveform(wav):
+    """Cheap augmentation for from-scratch training, per the assignment doc's
+    Data Augmentation section (torchaudio) — gain jitter + light additive
+    noise. Kept simple/fast since it runs on every training sample."""
+    gain_db = random.uniform(-6.0, 3.0)
+    wav = wav * (10 ** (gain_db / 20))
+    if random.random() < 0.5:
+        noise = torch.randn_like(wav) * (wav.abs().mean() * random.uniform(0.01, 0.05))
+        wav = wav + noise
+    return wav.clamp(-1.0, 1.0)
+
+
 class WaveformTrainDataset(Dataset):
     """One random chunk per track per __getitem__ call, for training."""
 
-    def __init__(self, index_path, chunk_samples=CHUNK_SAMPLES):
+    def __init__(self, index_path, chunk_samples=CHUNK_SAMPLES, augment=True):
         self.records = load_index(index_path)
         self.chunk_samples = chunk_samples
+        self.augment = augment
 
     def __len__(self):
         return len(self.records)
@@ -77,6 +90,8 @@ class WaveformTrainDataset(Dataset):
         else:
             start = random.randint(0, wav.numel() - self.chunk_samples)
             wav = wav[start : start + self.chunk_samples]
+        if self.augment:
+            wav = _augment_waveform(wav)
         return wav, rec["label_idx"]
 
 
@@ -118,13 +133,36 @@ def _log_mel_transform():
     return mel, to_db
 
 
+def _spec_augment(log_mel, freq_mask_width=20, time_mask_width=25, n_freq_masks=2, n_time_masks=2):
+    """SpecAugment (Park et al. 2019) on a (n_mels, T) log-mel chunk — per the
+    assignment doc's Data Augmentation section. Masks are filled with the
+    chunk's own mean (~silence in log-mel/dB space), not zero."""
+    log_mel = log_mel.clone()
+    fill = log_mel.mean()
+    n_mels, n_frames = log_mel.shape
+    for _ in range(n_freq_masks):
+        w = random.randint(0, min(freq_mask_width, n_mels - 1))
+        if w == 0:
+            continue
+        f0 = random.randint(0, n_mels - w)
+        log_mel[f0 : f0 + w, :] = fill
+    for _ in range(n_time_masks):
+        w = random.randint(0, min(time_mask_width, n_frames - 1))
+        if w == 0:
+            continue
+        t0 = random.randint(0, n_frames - w)
+        log_mel[:, t0 : t0 + w] = fill
+    return log_mel
+
+
 class MelChunkTrainDataset(Dataset):
     """One random log-mel chunk (128, 157) per track per __getitem__ call."""
 
-    def __init__(self, index_path, chunk_frames=MEL_CHUNK_FRAMES):
+    def __init__(self, index_path, chunk_frames=MEL_CHUNK_FRAMES, augment=True):
         self.records = load_index(index_path)
         self.chunk_frames = chunk_frames
         self.mel, self.to_db = _log_mel_transform()
+        self.augment = augment
 
     def __len__(self):
         return len(self.records)
@@ -140,6 +178,8 @@ class MelChunkTrainDataset(Dataset):
         else:
             start = random.randint(0, n_frames - self.chunk_frames)
             log_mel = log_mel[:, start : start + self.chunk_frames]
+        if self.augment:
+            log_mel = _spec_augment(log_mel)
         return log_mel, rec["label_idx"]
 
 
