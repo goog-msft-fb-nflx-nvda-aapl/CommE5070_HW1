@@ -1,0 +1,87 @@
+# Experiment log
+
+## 2026-08-29 — session 1: scaffold + reference ports (paused, offline)
+
+**Status when paused: no GPU job running.** `gsm-gpu2` tmux session `hw1_singer` finished
+its one-off conda env setup (`pip install ... > install_status.txt` shows `INSTALL_DONE`)
+and is sitting idle at a bash prompt — nothing to kill. No training has started yet.
+
+### Done
+- Access checks: gsm-gpu2 (4x H200 NVL, all idle, 1.1TB free on `/home/jtan`), GitHub
+  (`goog-msft-fb-nflx-nvda-aapl`, switched active), HuggingFace (reachable, no token —
+  fine for public models, will flag if something needed turns out gated).
+- Repo scaffolded at `/Users/chun-feitan/Desktop/CommE5070/HW1/CommE5070_HW1/`, own git
+  repo (root `~/Desktop` is an unrelated BlueWX repo — never touch that level), pushed to
+  `https://github.com/goog-msft-fb-nflx-nvda-aapl/CommE5070_HW1` (public).
+- gsm-gpu2: new conda env `hw1_singer_env` (python 3.10), packages installed — torch
+  2.5.1+cu121, torchaudio 2.5.1+cu121, librosa, scikit-learn, transformers,
+  huggingface_hub, matplotlib, seaborn, pandas, tqdm, soundfile, demucs, speechbrain.
+  New tmux session `hw1_singer` on gsm-gpu2 (separate from the pre-existing, unrelated
+  `oita_exp` session — don't touch that one).
+- Cloned the 5 reference repos read-only into the local scratchpad
+  (`/private/tmp/claude-501/.../scratchpad/refs/`, not part of this git repo) to port
+  architectures faithfully:
+  - `minzwon/sota-music-tagging-models` (Method 1)
+  - `ZainNasrullah/music-artist-classification-crnn` (Method 2-1)
+  - `bill317996/Singer-identification-in-artist20` (Method 2-2 / dataset paper)
+  - `ian-k-1217/Fully-Generalized-Non-Local-Network` (Method 2-3)
+  - `rssr25/voice-recognition-speak-sing` (Method 3) — cloned, not yet read/ported
+- Code written and committed to this repo so far:
+  - `src/data/prepare_index.py` — builds `labels.json`/`train.json`/`val.json`/`test.json`
+    manifests from the raw `train.json`/`val.json`/`test/` dataset layout. **Not yet run**
+    (needs `--data_root` pointed at the local `Hw1/hw1/artist20/` dir, or a copy of it on
+    gsm-gpu2).
+  - `src/data/dataset.py` — two chunk representations: `MelChunk{Train,Eval}Dataset`
+    (log-mel, n_mels=128, n_fft=2048, hop=512, chunk_frames=157 ≈5.02s, matching
+    bill317996's `utility.py` slicing) for the CRNN family, and
+    `Waveform{Train,Eval}Dataset` (raw 16kHz, 5s chunks) for sota-music-tagging-models /
+    SSL / speaker-embedding frontends. Eval datasets return *all* chunks of a track for
+    song-level aggregation at inference — not yet wired into an `evaluate.py`.
+  - `src/models/common.py` — `Conv_1d`/`Conv_2d`/`Res_2d`, ported verbatim from
+    sota-music-tagging-models.
+  - `src/models/sota_cnn.py` — `FCN` + `CRNN`, ported from sota-music-tagging-models
+    (Method 1), sigmoid→logits adaptation documented in the file's docstring.
+  - `src/models/confound_crnn.py` — `CRNN2D_elu2`, ported from
+    bill317996/Singer-identification-in-artist20 (Method 2-2 **and** our Task-2 "from
+    scratch" core model, since this is the artist20 paper's own architecture). Chose the
+    `_elu2` variant over the plainer `_elu` because only `_elu2`'s padding keeps the
+    frequency axis alive through all 4 pooling stages at `T=157` — documented in-file.
+  - `src/models/crnn_zain.py` — `CRNN2D`, ported from ZainNasrullah's Keras model
+    (Method 2-1). Faithfully reproduces `GRU(..., return_sequences=False)` returning only
+    the last time step (a real difference from bill317996's flattened-sequence approach).
+  - `src/models/nonlocal_fgnl.py` — `CRNN_FGNL`, ported from ian-k-1217's Keras/TF
+    Fully-Generalized-Non-Local block (Method 2-3): multi-scale theta/phi/g branches,
+    Gaussian pre-smoothing, `torch.roll`-diversified affinity maps, MoSE gating, residual
+    projection. Most involved port so far — worth a fresh read-through before trusting it
+    at training time.
+
+### Not yet done (next steps, in order)
+1. **Sanity-check the model files actually run** — no forward pass has been tested yet
+   (no torch environment available locally; needs gsm-gpu2's `hw1_singer_env` or a local
+   dry run with dummy tensors). Do this *before* trusting any of the architecture ports.
+2. `src/data/prepare_index.py` — run it, verify counts (train=949, val=231, test=233,
+   labels=20).
+3. Sync code + dataset to gsm-gpu2 (`~/hw1_singer/`), keeping to `/home/jtan/` only.
+4. `src/classical_ml.py` (Task 1) — not started.
+5. `src/train.py` (unified trainer) + `src/evaluate.py` (confusion matrix, top1/top3,
+   song-level chunk aggregation) — not started. Needed before any model above can
+   actually be trained/scored.
+6. `src/infer_test.py` — produces the `STUDENT_ID.json` submission — not started. Get
+   this working off the `confound_crnn` model first as an early safety-net submission.
+7. Still to port: `src/models/ssl_frontend.py` (Method 2-4 / Baseline 1, e.g. MERT/HuBERT
+   + linear probe) and `src/models/speaker_frontend.py` (Method 3, e.g. speechbrain
+   ECAPA-TDNN + linear probe) — repos cloned but not yet read.
+8. Vocal-separation ablation (demucs/open-unmix) — not started.
+9. Baseline 2 (audio-LLM zero-shot bonus) — not started, feasibility unchecked.
+10. t-SNE viz, mel-spectrogram + own-recording demo (**blocked on user supplying a voice
+    clip**, deferred to last on purpose per user instruction), README/requirements
+    finalization, Google Drive checkpoint upload, `MATERIALS.md` fill-in — all not started.
+
+### Notes / gotchas for future me
+- `.gitignore`'s `data/` pattern was originally unanchored and silently ate
+  `src/data/.gitkeep` too — fixed to `/data/` (root-only). If a new top-level dir
+  called `data` shows up unexpectedly untracked, check this first.
+- Local git identity for this repo is set via `git config --local` to the personal
+  account (`goog-msft-fb-nflx-nvda-aapl` / `r05921008@gmail.com`), not the BlueWX
+  company one — don't let a global config override it.
+- Student ID in filenames is still the placeholder `STUDENT_ID`.

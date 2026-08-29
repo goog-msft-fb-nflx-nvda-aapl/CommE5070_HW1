@@ -1,0 +1,14 @@
+torch>=2.3
+torchaudio>=2.3
+librosa>=0.10
+soundfile
+scikit-learn>=1.4
+numpy
+scipy
+pandas
+matplotlib
+seaborn
+tqdm
+transformers>=4.40
+huggingface_hub
+demucs
