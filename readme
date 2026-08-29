@@ -23,12 +23,12 @@ The best-performing model is `speaker_frontend` (frozen VoxCeleb-pretrained
 ECAPA-TDNN speaker embedding + a small trained classifier head — see
 `src/models/speaker_frontend.py` for the architecture/citation). Its
 checkpoint at `results/speaker_frontend/best.pt` (or the head-only variant
-linked from the cloud drive) reproduces the submitted `STUDENT_ID.json`:
+linked from the cloud drive) reproduces the submitted `R13921031.json`:
 
     python -m src.infer_test --model speaker_frontend \
         --checkpoint results/speaker_frontend/best.pt \
         --data_index_dir data/index \
-        --out_path STUDENT_ID.json
+        --out_path R13921031.json
 
 This downloads the pretrained ECAPA-TDNN backbone fresh from HuggingFace/
 speechbrain on first run (not bundled — see "Do not upload" in the

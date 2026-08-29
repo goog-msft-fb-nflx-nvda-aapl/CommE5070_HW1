@@ -1,5 +1,12 @@
 # Experiment log
 
+## 2026-08-29 — Student ID confirmed: R13921031
+
+Renamed `results/STUDENT_ID.json` → `results/R13921031.json`, updated all
+`STUDENT_ID` placeholder references in `README.md`/`readme`/`MATERIALS.md`/
+`src/infer_test.py` to the real ID. `R13921031_report.html` still needs
+building (deferred to the Claude-web pass over `MATERIALS.md`, per plan).
+
 ## 2026-08-29 — Google Drive checkpoint upload — final status: needs manual step
 
 All 6 checkpoints stripped down to small files (largest 3.5MB, smallest 220KB —

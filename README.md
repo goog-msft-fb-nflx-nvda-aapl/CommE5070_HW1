@@ -26,7 +26,7 @@ python -m src.train --model confound_crnn --data_index_dir data/index --out_dir 
 
 # 4. test-set predictions, in the assignment's {"001": [top1,top2,top3], ...} schema
 python -m src.infer_test --model confound_crnn --checkpoint results/confound_crnn/best.pt \
-    --data_index_dir data/index --out_path STUDENT_ID.json
+    --data_index_dir data/index --out_path R13921031.json
 
 # 5. t-SNE of a trained model's track embeddings
 python -m src.tsne_viz --model confound_crnn --checkpoint results/confound_crnn/best.pt \

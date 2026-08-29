@@ -1,6 +1,6 @@
 # Materials index (for report handoff)
 
-Running index of everything needed for the final `STUDENT_ID_report.html` (to be
+Running index of everything needed for the final `R13921031_report.html` (to be
 assembled separately, on Claude web, from these materials). Update as each
 experiment lands.
 

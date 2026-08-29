@@ -1,4 +1,4 @@
-"""Produces the assignment's `STUDENT_ID.json` test-set submission:
+"""Produces the assignment's `R13921031.json` test-set submission:
     {"001": [top1, top2, top3], "002": [...], ...}
 from a trained checkpoint, matching readme.md / test_pred.json's schema
 exactly (string-keyed track ids, artist-name strings as predictions, ordered
@@ -6,7 +6,7 @@ by descending confidence).
 
 Usage:
     python -m src.infer_test --model confound_crnn --checkpoint results/confound_crnn/best.pt \
-        --data_index_dir data/index --out_path STUDENT_ID.json
+        --data_index_dir data/index --out_path R13921031.json
 """
 import argparse
 import json
