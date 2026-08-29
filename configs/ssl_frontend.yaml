@@ -1,0 +1,14 @@
+# Method 2-4 / Baseline 1. Reproduce with (needs the separate hw1_ssl_env, torch>=2.6):
+#   python -m src.train --model ssl_frontend --data_index_dir data/index \
+#     --out_dir results/ssl_frontend --epochs 40 --batch_size 16 --patience 8 --num_workers 6 --lr 3e-4
+model: ssl_frontend
+backbone: m-a-p/MERT-v1-95M (frozen)
+input: waveform_chunk    # raw 16kHz, resampled to 24kHz inside the model
+epochs: 40
+batch_size: 16
+lr: 3.0e-4
+optimizer: adam
+patience: 8
+num_workers: 6
+env: hw1_ssl_env (torch 2.6.0+cu124)
+result: best_epoch=36 best_top1=0.6840

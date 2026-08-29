@@ -1,0 +1,14 @@
+# Method 3. Reproduce with (needs the separate hw1_ssl_env, torch>=2.6):
+#   python -m src.train --model speaker_frontend --data_index_dir data/index \
+#     --out_dir results/speaker_frontend --epochs 40 --batch_size 16 --patience 8 --num_workers 6 --lr 3e-4
+model: speaker_frontend
+backbone: speechbrain/spkrec-ecapa-voxceleb (frozen)
+input: waveform_chunk    # raw 16kHz, native rate for this backbone
+epochs: 40
+batch_size: 16
+lr: 3.0e-4
+optimizer: adam
+patience: 8
+num_workers: 6
+env: hw1_ssl_env (torch 2.6.0+cu124)
+result: best_epoch=32 best_top1=0.8961   # strongest model in the comparison
