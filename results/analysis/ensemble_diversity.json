@@ -1,0 +1,42 @@
+{
+  "individual_top1": {
+    "confound_crnn": 0.670995670995671,
+    "crnn_zain": 0.6190476190476191,
+    "sota_crnn": 0.5844155844155844,
+    "fgnl": 0.5714285714285714
+  },
+  "pairwise": {
+    "confound_crnn_vs_crnn_zain": {
+      "cohens_kappa": 0.5644277718232703,
+      "disagreement_rate": 0.41125541125541126,
+      "double_fault_rate": 0.21645021645021645
+    },
+    "confound_crnn_vs_sota_crnn": {
+      "cohens_kappa": 0.6303704296343707,
+      "disagreement_rate": 0.3463203463203463,
+      "double_fault_rate": 0.26406926406926406
+    },
+    "confound_crnn_vs_fgnl": {
+      "cohens_kappa": 0.5778559084679102,
+      "disagreement_rate": 0.39826839826839827,
+      "double_fault_rate": 0.2510822510822511
+    },
+    "crnn_zain_vs_sota_crnn": {
+      "cohens_kappa": 0.544342385781745,
+      "disagreement_rate": 0.42857142857142855,
+      "double_fault_rate": 0.2597402597402597
+    },
+    "crnn_zain_vs_fgnl": {
+      "cohens_kappa": 0.5757660445154208,
+      "disagreement_rate": 0.39826839826839827,
+      "double_fault_rate": 0.2683982683982684
+    },
+    "sota_crnn_vs_fgnl": {
+      "cohens_kappa": 0.5794790749779948,
+      "disagreement_rate": 0.3939393939393939,
+      "double_fault_rate": 0.2943722943722944
+    }
+  },
+  "oracle_ensemble_top1": 0.8311688311688312,
+  "majority_vote_ensemble_top1": 0.683982683982684
+}

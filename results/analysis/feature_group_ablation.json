@@ -1,0 +1,57 @@
+{
+  "all_features": {
+    "top1": 0.5930735930735931,
+    "top3": 0.8311688311688312,
+    "n_dims": 178
+  },
+  "single_group_only": {
+    "timbre_mfcc": {
+      "top1": 0.5497835497835498,
+      "top3": 0.7575757575757576,
+      "n_dims": 120
+    },
+    "harmonic_tonal": {
+      "top1": 0.2857142857142857,
+      "top3": 0.5367965367965368,
+      "n_dims": 36
+    },
+    "spectral_shape": {
+      "top1": 0.27705627705627706,
+      "top3": 0.4805194805194805,
+      "n_dims": 8
+    },
+    "sub_band_energy": {
+      "top1": 0.3203463203463203,
+      "top3": 0.5800865800865801,
+      "n_dims": 14
+    }
+  },
+  "leave_one_group_out": {
+    "minus_timbre_mfcc": {
+      "top1": 0.4675324675324675,
+      "top3": 0.683982683982684,
+      "n_dims": 58
+    },
+    "minus_harmonic_tonal": {
+      "top1": 0.5497835497835498,
+      "top3": 0.7878787878787878,
+      "n_dims": 142
+    },
+    "minus_spectral_shape": {
+      "top1": 0.5974025974025974,
+      "top3": 0.8311688311688312,
+      "n_dims": 170
+    },
+    "minus_sub_band_energy": {
+      "top1": 0.5584415584415584,
+      "top3": 0.7965367965367965,
+      "n_dims": 164
+    }
+  },
+  "rf_permutation_importance_by_group": {
+    "timbre_mfcc": 0.23160173160173617,
+    "harmonic_tonal": 0.02683982683982806,
+    "spectral_shape": 0.04718614718614749,
+    "sub_band_energy": 0.10606060606060662
+  }
+}

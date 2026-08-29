@@ -1,0 +1,32 @@
+{
+  "mert": {
+    "linear_probe": {
+      "top1": 0.6883116883116883,
+      "top3": 0.8658008658008658
+    },
+    "cosine_centroid": {
+      "top1": 0.5670995670995671,
+      "top3": 0.7402597402597403
+    },
+    "embedding_diagnostics": {
+      "silhouette_cosine": 0.0012794152135029435,
+      "mean_within_class_cosine_sim": 0.9460217356681824,
+      "mean_between_class_cosine_sim": 0.9240991473197937
+    }
+  },
+  "ecapa": {
+    "linear_probe": {
+      "top1": 0.9523809523809523,
+      "top3": 0.9783549783549783
+    },
+    "cosine_centroid": {
+      "top1": 0.8484848484848485,
+      "top3": 0.922077922077922
+    },
+    "embedding_diagnostics": {
+      "silhouette_cosine": 0.18055078387260437,
+      "mean_within_class_cosine_sim": 0.8336455821990967,
+      "mean_between_class_cosine_sim": 0.6757559776306152
+    }
+  }
+}
