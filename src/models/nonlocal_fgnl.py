@@ -129,7 +129,7 @@ class FullyGeneralizedNonLocal(nn.Module):
 
 
 class CRNN_FGNL(nn.Module):
-    def __init__(self, n_class=20, n_mels=128, channel_denominator=32):
+    def __init__(self, n_class=20, n_mels=128, chunk_frames=157, channel_denominator=32):
         super().__init__()
         self.bn0 = nn.BatchNorm1d(n_mels)
 
@@ -142,17 +142,22 @@ class CRNN_FGNL(nn.Module):
             theta_channels=128, multiscale_channels=[128, 128], channel_denominator=channel_denominator
         )
 
-        self.gru1 = None  # lazily built once we know freq*channel at runtime
+        # gru1's input size (freq*channel after the conv/FGNL stack) depends
+        # on n_mels/chunk_frames; compute it once via a dummy forward so the
+        # module exists at construction time (needed for state_dict loading
+        # on a freshly-constructed model, before any real forward pass has
+        # happened — lazily building it on first forward() breaks
+        # `load_state_dict` for fresh inference scripts).
+        with torch.no_grad():
+            dummy = torch.zeros(1, n_mels, chunk_frames)
+            gru1_input_size = self._conv_features(dummy).size(-1)
+        self.gru1 = nn.GRU(gru1_input_size, 32, batch_first=True)
         self._gru2 = nn.GRU(32, 32, batch_first=True)
         self.dropout = nn.Dropout(0.3)
         self.dense = nn.Linear(32, n_class)
         self._n_class = n_class
 
-    def _ensure_gru1(self, input_size, device):
-        if self.gru1 is None:
-            self.gru1 = nn.GRU(input_size, 32, batch_first=True).to(device)
-
-    def embed(self, x):
+    def _conv_features(self, x):
         x = self.bn0(x)
         x = x.unsqueeze(1)
 
@@ -165,9 +170,10 @@ class CRNN_FGNL(nn.Module):
 
         # (N, C, freq, time) -> (N, time, freq, C) -> (N, time, freq*C)
         z = z.permute(0, 3, 2, 1)
-        z = z.reshape(z.size(0), z.size(1), -1)
+        return z.reshape(z.size(0), z.size(1), -1)
 
-        self._ensure_gru1(z.size(-1), z.device)
+    def embed(self, x):
+        z = self._conv_features(x)
         z, _ = self.gru1(z)
         z, _ = self._gru2(z)
         return z[:, -1, :]
