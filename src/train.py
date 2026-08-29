@@ -25,11 +25,29 @@ from src.models.crnn_zain import CRNN2D
 from src.models.nonlocal_fgnl import CRNN_FGNL
 from src.models.sota_cnn import CRNN as SotaCRNN
 
+def _build_ssl_frontend(n_class):
+    from src.models.ssl_frontend import SSLLinearProbe
+
+    return SSLLinearProbe(n_class=n_class)
+
+
+def _build_speaker_frontend(n_class):
+    from src.models.speaker_frontend import SpeakerEmbeddingProbe
+
+    return SpeakerEmbeddingProbe(n_class=n_class)
+
+
 MODEL_REGISTRY = {
     "confound_crnn": (lambda n_class: CRNN2D_elu2(n_class=n_class), "mel"),
     "crnn_zain": (lambda n_class: CRNN2D(n_class=n_class), "mel"),
     "fgnl": (lambda n_class: CRNN_FGNL(n_class=n_class), "mel"),
     "sota_crnn": (lambda n_class: SotaCRNN(n_class=n_class), "wave"),
+    # ssl_frontend / speaker_frontend need torch>=2.6 (HF safetensors-only
+    # torch.load policy) — run these with the separate `hw1_ssl_env` conda
+    # env on gsm-gpu2, not the main `hw1_singer_env`. See
+    # src/models/ssl_frontend.py's docstring / EXPERIMENT_LOG.md.
+    "ssl_frontend": (_build_ssl_frontend, "wave"),
+    "speaker_frontend": (_build_speaker_frontend, "wave"),
 }
 
 
