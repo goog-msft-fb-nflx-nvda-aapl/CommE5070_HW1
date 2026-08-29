@@ -1,5 +1,7 @@
-torch>=2.3
-torchaudio>=2.3
+# torch>=2.6 required: HF's safetensors-only torch.load policy blocks some
+# pretrained checkpoints (ssl_frontend / speaker_frontend) on older torch.
+torch>=2.6
+torchaudio>=2.6
 librosa>=0.10
 soundfile
 scikit-learn>=1.4
@@ -12,3 +14,4 @@ tqdm
 transformers>=4.40
 huggingface_hub
 demucs
+speechbrain

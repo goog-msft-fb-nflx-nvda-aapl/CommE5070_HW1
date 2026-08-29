@@ -111,6 +111,23 @@ detail — not pursued, listed for report completeness):
   a frozen encoder instead of plain softmax — cheap to try, flagged as a
   training-objective ablation rather than a new encoder.
 
+## Bonus — Baseline 2, zero-shot audio-LLM
+Qwen2-Audio-7B-Instruct, prompted with a 15s clip + the closed list of 20
+artist names, asked to rank its top-3 guesses (no training/fine-tuning).
+On 40 val tracks: **top1=0.475, top3=0.700** — below the trained models but
+surprisingly close to several from-scratch CRNNs (crnn_zain 0.619,
+confound_crnn 0.649), and far above the 5%/15% random-chance floor for 20-way
+top1/top3, for a model that saw zero gradient steps on this dataset.
+(First pass under-scored this at 0.325/0.525 due to an answer-parsing bug —
+the prompt asked the model to reply with underscored label names like
+"led_zeppelin", which it naturally spelled as "Led Zeppelin"; the parser
+didn't normalize spaces vs. underscores before matching. Fixed by presenting
+space-separated names in the prompt and normalizing both sides before
+matching — worth remembering generally: always sanity-check an LLM-as-judge
+or LLM-output parser against a few raw examples before trusting the score.)
+Results: `results/audio_llm/val_predictions.json` (includes raw model text
+per track for inspection).
+
 ## Visualizations
 - t-SNE embedding plot: `results/speaker_frontend/tsne.png` (best model, val
   set) — clean, tight per-artist clusters.

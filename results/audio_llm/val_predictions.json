@@ -1,0 +1,362 @@
+{
+  "/home/jtan/hw1_singer/artist20/train_val/aerosmith/Pump/01-Young_Lust.mp3": {
+    "top3": [
+      "beatles",
+      "dave_matthews_band",
+      "aerosmith"
+    ],
+    "raw": "radio head, beatles, dave matthews band",
+    "true": "aerosmith"
+  },
+  "/home/jtan/hw1_singer/artist20/train_val/aerosmith/Pump/02-F_I_N_E_.mp3": {
+    "top3": [
+      "beatles",
+      "dave_matthews_band",
+      "aerosmith"
+    ],
+    "raw": "radio head, beatles, dave matthews band",
+    "true": "aerosmith"
+  },
+  "/home/jtan/hw1_singer/artist20/train_val/aerosmith/Pump/03-Going_Down-Love_In_An_Elevator.mp3": {
+    "top3": [
+      "led_zeppelin",
+      "queen",
+      "aerosmith"
+    ],
+    "raw": "radio head, led zeppelin, queen",
+    "true": "aerosmith"
+  },
+  "/home/jtan/hw1_singer/artist20/train_val/aerosmith/Pump/04-Monkey_On_My_Back.mp3": {
+    "top3": [
+      "led_zeppelin",
+      "beatles",
+      "aerosmith"
+    ],
+    "raw": "radio head, led zeppelin, beatles",
+    "true": "aerosmith"
+  },
+  "/home/jtan/hw1_singer/artist20/train_val/aerosmith/Pump/05-Water_Song-Janie_s_Got_A_Gun.mp3": {
+    "top3": [
+      "beatles",
+      "dave_matthews_band",
+      "aerosmith"
+    ],
+    "raw": "radio head, beatles, dave matthews band",
+    "true": "aerosmith"
+  },
+  "/home/jtan/hw1_singer/artist20/train_val/aerosmith/Pump/06-Dulcimer_Stomp-The_Other_Side.mp3": {
+    "top3": [
+      "beatles",
+      "dave_matthews_band",
+      "aerosmith"
+    ],
+    "raw": "radio head, beatles, dave matthews band",
+    "true": "aerosmith"
+  },
+  "/home/jtan/hw1_singer/artist20/train_val/aerosmith/Pump/07-My_Girl.mp3": {
+    "top3": [
+      "beatles",
+      "led_zeppelin",
+      "radiohead"
+    ],
+    "raw": "beatles, led zeppelin, radiohead",
+    "true": "aerosmith"
+  },
+  "/home/jtan/hw1_singer/artist20/train_val/aerosmith/Pump/08-Don_t_Get_Mad_Get_Even.mp3": {
+    "top3": [
+      "led_zeppelin",
+      "u2",
+      "aerosmith"
+    ],
+    "raw": "radio head, led zeppelin, u2",
+    "true": "aerosmith"
+  },
+  "/home/jtan/hw1_singer/artist20/train_val/aerosmith/Pump/09-Hoodoo-Voodoo_Medicine_Man.mp3": {
+    "top3": [
+      "beatles",
+      "led_zeppelin",
+      "aerosmith"
+    ],
+    "raw": "radio head, beatles, led zeppelin",
+    "true": "aerosmith"
+  },
+  "/home/jtan/hw1_singer/artist20/train_val/aerosmith/Pump/10-What_It_Takes.mp3": {
+    "top3": [
+      "beatles",
+      "dave_matthews_band",
+      "aerosmith"
+    ],
+    "raw": "radio head, beatles, dave matthews band",
+    "true": "aerosmith"
+  },
+  "/home/jtan/hw1_singer/artist20/train_val/beatles/A_Hard_Day_s_Night/01-A_Hard_Day_s_Night.mp3": {
+    "top3": [
+      "beatles",
+      "u2",
+      "aerosmith"
+    ],
+    "raw": "radio head, beatles, u2",
+    "true": "beatles"
+  },
+  "/home/jtan/hw1_singer/artist20/train_val/beatles/A_Hard_Day_s_Night/02-I_Should_Have_Known_Better.mp3": {
+    "top3": [
+      "beatles",
+      "led_zeppelin",
+      "radiohead"
+    ],
+    "raw": "beatles, led zeppelin, radiohead",
+    "true": "beatles"
+  },
+  "/home/jtan/hw1_singer/artist20/train_val/beatles/A_Hard_Day_s_Night/03-If_I_Fell.mp3": {
+    "top3": [
+      "beatles",
+      "dave_matthews_band",
+      "aerosmith"
+    ],
+    "raw": "radio head, beatles, dave matthews band",
+    "true": "beatles"
+  },
+  "/home/jtan/hw1_singer/artist20/train_val/beatles/A_Hard_Day_s_Night/04-I_m_Happy_Just_To_Dance_With_You.mp3": {
+    "top3": [
+      "beatles",
+      "u2",
+      "aerosmith"
+    ],
+    "raw": "radio head, beatles, u2",
+    "true": "beatles"
+  },
+  "/home/jtan/hw1_singer/artist20/train_val/beatles/A_Hard_Day_s_Night/05-And_I_Love_Her.mp3": {
+    "top3": [
+      "beatles",
+      "led_zeppelin",
+      "aerosmith"
+    ],
+    "raw": "radio head, beatles, led zeppelin",
+    "true": "beatles"
+  },
+  "/home/jtan/hw1_singer/artist20/train_val/beatles/A_Hard_Day_s_Night/06-Tell_Me_Why.mp3": {
+    "top3": [
+      "beatles",
+      "led_zeppelin",
+      "radiohead"
+    ],
+    "raw": "beatles, led zeppelin, radiohead",
+    "true": "beatles"
+  },
+  "/home/jtan/hw1_singer/artist20/train_val/beatles/A_Hard_Day_s_Night/07-Can_t_Buy_Me_Love.mp3": {
+    "top3": [
+      "beatles",
+      "u2",
+      "aerosmith"
+    ],
+    "raw": "radio head, beatles, u2",
+    "true": "beatles"
+  },
+  "/home/jtan/hw1_singer/artist20/train_val/beatles/A_Hard_Day_s_Night/08-Any_Time_At_All.mp3": {
+    "top3": [
+      "beatles",
+      "led_zeppelin",
+      "radiohead"
+    ],
+    "raw": "beatles, led zeppelin, radiohead",
+    "true": "beatles"
+  },
+  "/home/jtan/hw1_singer/artist20/train_val/beatles/A_Hard_Day_s_Night/09-I_ll_Cry_Instead.mp3": {
+    "top3": [
+      "beatles",
+      "led_zeppelin",
+      "radiohead"
+    ],
+    "raw": "beatles, led zeppelin, radiohead",
+    "true": "beatles"
+  },
+  "/home/jtan/hw1_singer/artist20/train_val/beatles/A_Hard_Day_s_Night/10-Things_We_Said_Today.mp3": {
+    "top3": [
+      "beatles",
+      "u2",
+      "aerosmith"
+    ],
+    "raw": "radio head, beatles, u2",
+    "true": "beatles"
+  },
+  "/home/jtan/hw1_singer/artist20/train_val/beatles/A_Hard_Day_s_Night/11-When_I_Get_Home.mp3": {
+    "top3": [
+      "beatles",
+      "led_zeppelin",
+      "radiohead"
+    ],
+    "raw": "beatles, led zeppelin, radiohead",
+    "true": "beatles"
+  },
+  "/home/jtan/hw1_singer/artist20/train_val/beatles/A_Hard_Day_s_Night/12-You_Can_t_Do_That.mp3": {
+    "top3": [
+      "beatles",
+      "dave_matthews_band",
+      "aerosmith"
+    ],
+    "raw": "radio head, beatles, dave matthews band",
+    "true": "beatles"
+  },
+  "/home/jtan/hw1_singer/artist20/train_val/beatles/A_Hard_Day_s_Night/13-I_ll_Be_Back.mp3": {
+    "top3": [
+      "beatles",
+      "led_zeppelin",
+      "radiohead"
+    ],
+    "raw": "beatles, led zeppelin, radiohead",
+    "true": "beatles"
+  },
+  "/home/jtan/hw1_singer/artist20/train_val/creedence_clearwater_revival/Green_River/01-Green_River.mp3": {
+    "top3": [
+      "creedence_clearwater_revival",
+      "led_zeppelin",
+      "aerosmith"
+    ],
+    "raw": "creedence clearwater revival, led zeppelin, radio head",
+    "true": "creedence_clearwater_revival"
+  },
+  "/home/jtan/hw1_singer/artist20/train_val/creedence_clearwater_revival/Green_River/02-Commotion.mp3": {
+    "top3": [
+      "beatles",
+      "led_zeppelin",
+      "aerosmith"
+    ],
+    "raw": "radio head, beatles, led zeppelin",
+    "true": "creedence_clearwater_revival"
+  },
+  "/home/jtan/hw1_singer/artist20/train_val/creedence_clearwater_revival/Green_River/03-Tombstone_Shadow.mp3": {
+    "top3": [
+      "creedence_clearwater_revival",
+      "led_zeppelin",
+      "aerosmith"
+    ],
+    "raw": "creedence clearwater revival, led zeppelin, radio head",
+    "true": "creedence_clearwater_revival"
+  },
+  "/home/jtan/hw1_singer/artist20/train_val/creedence_clearwater_revival/Green_River/04-Wrote_A_Song_For_Everyone.mp3": {
+    "top3": [
+      "creedence_clearwater_revival",
+      "led_zeppelin",
+      "radiohead"
+    ],
+    "raw": "creedence clearwater revival, led zeppelin, radiohead",
+    "true": "creedence_clearwater_revival"
+  },
+  "/home/jtan/hw1_singer/artist20/train_val/creedence_clearwater_revival/Green_River/05-Bad_Moon_Rising.mp3": {
+    "top3": [
+      "creedence_clearwater_revival",
+      "led_zeppelin",
+      "radiohead"
+    ],
+    "raw": "creedence clearwater revival, led zeppelin, radiohead",
+    "true": "creedence_clearwater_revival"
+  },
+  "/home/jtan/hw1_singer/artist20/train_val/creedence_clearwater_revival/Green_River/06-Lodi.mp3": {
+    "top3": [
+      "creedence_clearwater_revival",
+      "led_zeppelin",
+      "aerosmith"
+    ],
+    "raw": "creedence clearwater revival, led zeppelin, radio head",
+    "true": "creedence_clearwater_revival"
+  },
+  "/home/jtan/hw1_singer/artist20/train_val/creedence_clearwater_revival/Green_River/07-Cross-Tie_Walker.mp3": {
+    "top3": [
+      "creedence_clearwater_revival",
+      "led_zeppelin",
+      "radiohead"
+    ],
+    "raw": "creedence clearwater revival, led zeppelin, radiohead",
+    "true": "creedence_clearwater_revival"
+  },
+  "/home/jtan/hw1_singer/artist20/train_val/creedence_clearwater_revival/Green_River/08-Sinister_Purpose.mp3": {
+    "top3": [
+      "beatles",
+      "u2",
+      "aerosmith"
+    ],
+    "raw": "radio head, beatles, u2",
+    "true": "creedence_clearwater_revival"
+  },
+  "/home/jtan/hw1_singer/artist20/train_val/creedence_clearwater_revival/Green_River/09-The_Night_Time_Is_The_Right_Time.mp3": {
+    "top3": [
+      "beatles",
+      "led_zeppelin",
+      "aerosmith"
+    ],
+    "raw": "radio head, beatles, led zeppelin",
+    "true": "creedence_clearwater_revival"
+  },
+  "/home/jtan/hw1_singer/artist20/train_val/cure/The_Top/01-Shake_Dog_Shake.mp3": {
+    "top3": [
+      "led_zeppelin",
+      "queen",
+      "aerosmith"
+    ],
+    "raw": "radio head, led zeppelin, queen",
+    "true": "cure"
+  },
+  "/home/jtan/hw1_singer/artist20/train_val/cure/The_Top/02-Bird_Mad_Girl.mp3": {
+    "top3": [
+      "beatles",
+      "radiohead",
+      "u2"
+    ],
+    "raw": "beatles, radiohead, u2",
+    "true": "cure"
+  },
+  "/home/jtan/hw1_singer/artist20/train_val/cure/The_Top/03-Wailing_Wall.mp3": {
+    "top3": [
+      "beatles",
+      "u2",
+      "aerosmith"
+    ],
+    "raw": "radio head, beatles, u2",
+    "true": "cure"
+  },
+  "/home/jtan/hw1_singer/artist20/train_val/cure/The_Top/04-Give_Me_It.mp3": {
+    "top3": [
+      "led_zeppelin",
+      "beatles",
+      "aerosmith"
+    ],
+    "raw": "radio head, led zeppelin, beatles",
+    "true": "cure"
+  },
+  "/home/jtan/hw1_singer/artist20/train_val/cure/The_Top/05-Dressing_Up.mp3": {
+    "top3": [
+      "beatles",
+      "led_zeppelin",
+      "aerosmith"
+    ],
+    "raw": "radio head, beatles, led zeppelin",
+    "true": "cure"
+  },
+  "/home/jtan/hw1_singer/artist20/train_val/cure/The_Top/06-The_Caterpillar.mp3": {
+    "top3": [
+      "beatles",
+      "u2",
+      "aerosmith"
+    ],
+    "raw": "radio head, beatles, u2",
+    "true": "cure"
+  },
+  "/home/jtan/hw1_singer/artist20/train_val/cure/The_Top/07-Piggy_In_The_Mirror.mp3": {
+    "top3": [
+      "beatles",
+      "u2",
+      "aerosmith"
+    ],
+    "raw": "radio head, beatles, u2",
+    "true": "cure"
+  },
+  "/home/jtan/hw1_singer/artist20/train_val/cure/The_Top/08-The_Empty_World.mp3": {
+    "top3": [
+      "beatles",
+      "dave_matthews_band",
+      "aerosmith"
+    ],
+    "raw": "radio head, beatles, dave matthews band",
+    "true": "cure"
+  }
+}

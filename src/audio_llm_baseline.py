@@ -26,8 +26,14 @@ MODEL_ID = "Qwen/Qwen2-Audio-7B-Instruct"
 SR = 16000
 
 
+def _norm(s):
+    return re.sub(r"[_\s]+", " ", s.strip().lower())
+
+
 def build_prompt(labels):
-    options = ", ".join(labels)
+    # underscored folder names (e.g. "led_zeppelin") read unnaturally to a chat
+    # model; present them with spaces, then map back via _norm() when parsing.
+    options = ", ".join(l.replace("_", " ") for l in labels)
     return (
         "You are a music expert. Listen to this short audio clip and identify which "
         f"artist/singer is performing, choosing ONLY from this exact list: {options}. "
@@ -37,17 +43,18 @@ def build_prompt(labels):
 
 
 def parse_top3(text, labels):
-    label_set = {l.lower(): l for l in labels}
+    label_set = {_norm(l): l for l in labels}
     found = []
     # try comma/newline-separated parse first
     for tok in re.split(r"[,\n]", text):
-        key = tok.strip().lower()
+        key = _norm(tok)
         if key in label_set and label_set[key] not in found:
             found.append(label_set[key])
     if len(found) < 3:
-        # fallback: substring search, preserving list order of first mention
+        # fallback: substring search (normalized), preserving list order of first mention
+        norm_text = _norm(text)
         for name in labels:
-            if name.lower() in text.lower() and name not in found:
+            if _norm(name) in norm_text and name not in found:
                 found.append(name)
     return (found + [labels[0]] * 3)[:3]  # pad defensively, never crash on a bad response
 
