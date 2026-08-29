@@ -51,11 +51,19 @@ MODEL_REGISTRY = {
 }
 
 
-def build_datasets(model_kind, index_dir):
+def build_datasets(model_kind, index_dir, remix_dir=None):
     train_path = os.path.join(index_dir, "train.json")
     val_path = os.path.join(index_dir, "val.json")
     if model_kind == "mel":
-        return MelChunkTrainDataset(train_path), MelChunkEvalDataset(val_path)
+        if remix_dir is not None:
+            from src.data.remix_dataset import RemixMelChunkTrainDataset
+
+            vocals_path = os.path.join(remix_dir, "train.json")
+            accompaniment_path = os.path.join(remix_dir, "train_accompaniment.json")
+            train_ds = RemixMelChunkTrainDataset(train_path, vocals_path, accompaniment_path)
+        else:
+            train_ds = MelChunkTrainDataset(train_path)
+        return train_ds, MelChunkEvalDataset(val_path)
     return WaveformTrainDataset(train_path), WaveformEvalDataset(val_path)
 
 
@@ -71,6 +79,9 @@ def main():
     ap.add_argument("--patience", type=int, default=10)
     ap.add_argument("--num_workers", type=int, default=8)
     ap.add_argument("--no_scheduler", action="store_true", help="disable cosine LR decay")
+    ap.add_argument("--remix_dir", default=None,
+                     help="dir with train.json (vocals) + train_accompaniment.json (accompaniment) "
+                          "for cross-song remix training (mel models only) — see src/data/remix_dataset.py")
     ap.add_argument("--device", default="cuda" if torch.cuda.is_available() else "cpu")
     args = ap.parse_args()
 
@@ -82,7 +93,7 @@ def main():
     model_fn, kind = MODEL_REGISTRY[args.model]
     model = model_fn(len(labels)).to(args.device)
 
-    train_ds, val_ds = build_datasets(kind, args.data_index_dir)
+    train_ds, val_ds = build_datasets(kind, args.data_index_dir, remix_dir=args.remix_dir)
     train_loader = DataLoader(
         train_ds, batch_size=args.batch_size, shuffle=True,
         num_workers=args.num_workers, drop_last=True, persistent_workers=args.num_workers > 0,
