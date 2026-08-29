@@ -1,0 +1,18 @@
+{
+  "audio_path": "unstoppable_sia.wav",
+  "model": "speaker_frontend",
+  "top3": [
+    [
+      "fleetwood_mac",
+      0.46873441338539124
+    ],
+    [
+      "roxette",
+      0.2320985198020935
+    ],
+    [
+      "tori_amos",
+      0.1586417257785797
+    ]
+  ]
+}

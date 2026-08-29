@@ -152,8 +152,17 @@ per track for inspection).
 - Confusion matrices: `results/speaker_frontend/confusion_matrix_*.png` (best
   model, strongly diagonal), plus one per Task-1 classifier and per Task-2
   model in their respective `results/<name>/` dirs.
-- Mel-spectrogram + own-recording inference: TBD (blocked on user-supplied clip,
-  intentionally last per user instruction)
+- Mel-spectrogram + own-recording inference: `results/demo/melspectrogram.png`
+  + `results/demo/prediction.json`. Input: user-supplied clip of "Unstoppable"
+  by Sia (`unstoppable_sia.m4a`, recorded via Voice Memos — not a
+  train_val/test artist, so this is a genuine out-of-distribution probe, not
+  a memorized track). Best model's (`speaker_frontend`) top-3: fleetwood_mac
+  (0.469), roxette (0.232), tori_amos (0.159). Discussion angle: all three are
+  female-fronted (Sia is female) or alto/mezzo-range acts within the 20-artist
+  set — with the true singer entirely absent from the label space, the model
+  falls back to nearest-neighbor vocal timbre among what it knows, which is
+  exactly the behavior you'd hope for from a well-calibrated closed-set
+  classifier facing an open-set input.
 
 ## Citations
 (see per-file docstrings in `src/models/*.py` for full citations; summary:)
