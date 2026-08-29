@@ -219,6 +219,16 @@ separates artists at all, consistent with it encoding general polyphonic/
 genre structure rather than vocal identity, exactly as its training objective
 (masked acoustic-token modeling over full mixtures) would predict.
 
+Also ran the **shuffled-label sanity check** all 4 engines recommended for a
+different failure mode than the head-swap (split/pipeline leakage, not
+classifier overfitting): retrained `speaker_frontend` with training labels
+randomly permuted, val labels untouched. Result
+(`results/analysis/shuffled_label_check.json`): val top1 collapses to
+**3.9%** (best across 40 epochs: 11.3%), right at the 5.0% chance floor for
+20-way classification. The pipeline cannot "cheat" its way to a high score —
+confirms the genuine 95.2% on correctly-labeled data isn't an artifact of a
+broken train/val split or file-overlap bug.
+
 Caveats we did *not* fully close out, flagged for the report rather than
 silently assumed away (per Gemini's/ChatGPT's checklist): we don't have
 access to the assignment's actual held-out **test-set labels** (only the TA
