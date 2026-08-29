@@ -1,0 +1,26 @@
+# data
+/data/
+artist20/
+*.mp3
+*.wav
+
+# checkpoints / large artifacts
+checkpoints/
+*.pt
+*.pth
+*.ckpt
+
+# python
+__pycache__/
+*.pyc
+.ipynb_checkpoints/
+.venv/
+venv/
+
+# logs / caches
+*.log
+wandb/
+.cache/
+
+# os
+.DS_Store
