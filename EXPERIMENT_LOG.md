@@ -1,5 +1,44 @@
 # Experiment log
 
+## 2026-08-30 — TA clarifications (TA_discussion.md) changed the graded submission
+
+User pointed to `TA_discussion.md` (Q&A thread from the course TA). Two
+important clarifications that weren't obvious from the assignment doc alone:
+
+1. **Task 1's accuracy doesn't count toward the grade at all** — TA grades
+   only on whether the analysis process is reasonable/thorough. Retroactively
+   validates prioritizing the feature-group ablation + permutation importance
+   work over chasing a higher SVM number.
+2. **Task 2 requires training both encoder and classifier from scratch** — a
+   pretrained encoder (frozen or fine-tuned) is explicitly baseline-only, not
+   eligible as the graded submission (TA_discussion.md #4: "task2 需要自己重新訓
+   一個 encoder + classifier"). This directly contradicts what had been treated
+   as the project's headline result: `speaker_frontend` (frozen ECAPA-TDNN +
+   trained head, 95.2% top1) was the model used to generate the official test
+   submission — not compliant per this clarification.
+
+**Action taken**: swapped the graded/submitted model to `confound_crnn` (from
+scratch, `CRNN2D_elu2`, 67.1%/82.3% top1/top3) — the best fully-from-scratch
+model. Regenerated `results/R13921031.json` from it. Regenerated the t-SNE and
+mel-spectrogram/inference demo using `confound_crnn` too (previously only had
+these for `speaker_frontend`) so the "required" deliverables come from an
+eligible model, while keeping `speaker_frontend`'s versions as baseline
+comparisons — showing both side by side is more informative anyway (visual
+cluster/accuracy gap tracks exactly as expected). Updated `readme` (TA-facing)
+and `MATERIALS.md` throughout to distinguish "graded submission" (from-scratch
+models) from "baseline" (`ssl_frontend`/`speaker_frontend`, pretrained
+encoders) rather than silently relabeling — `speaker_frontend` is still the
+most interesting single result in the project and is kept prominent in
+`MATERIALS.md` as a baseline, just no longer framed as "the best model" for
+grading purposes.
+
+Also relevant, no action needed: dataset was already the corrected full-song
+version (TA_discussion.md #1) and downloaded from the provided local copy, not
+the Artist20 website — no issue there. Test set's 4 known-instrumental tracks
+(074/119/169/206, TA_discussion.md #2) don't need special handling —
+`infer_test.py` already produces a prediction for every track uniformly, and
+the TA said those results won't affect scoring.
+
 ## 2026-08-29 — Student ID confirmed: R13921031
 
 Renamed `results/STUDENT_ID.json` → `results/R13921031.json`, updated all

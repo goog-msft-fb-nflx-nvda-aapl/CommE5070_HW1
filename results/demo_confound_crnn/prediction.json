@@ -1,0 +1,18 @@
+{
+  "audio_path": "unstoppable_sia.wav",
+  "model": "confound_crnn",
+  "top3": [
+    [
+      "madonna",
+      0.45809072256088257
+    ],
+    [
+      "radiohead",
+      0.17490620911121368
+    ],
+    [
+      "prince",
+      0.11386539041996002
+    ]
+  ]
+}

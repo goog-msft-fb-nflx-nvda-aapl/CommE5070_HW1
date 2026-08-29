@@ -19,29 +19,43 @@ provided: `train.json`, `val.json`, `train_val/<artist>/<album>/*.mp3`,
 
 Running inference (the graded model)
 -------------------------------------
-The best-performing model is `speaker_frontend` (frozen VoxCeleb-pretrained
-ECAPA-TDNN speaker embedding + a small trained classifier head — see
-`src/models/speaker_frontend.py` for the architecture/citation). Its
-checkpoint at `results/speaker_frontend/best.pt` (or the head-only variant
-linked from the cloud drive) reproduces the submitted `R13921031.json`:
+Per the TA's clarification on NTU Cool (see `TA_discussion.md` #4 — Task 2
+requires training your own encoder *and* classifier from scratch; a
+pretrained encoder, frozen or fine-tuned, is only valid as a baseline
+comparison, not the graded submission), the graded Task-2 model is
+`confound_crnn` — `CRNN2D_elu2`, ported faithfully from
+bill317996/Singer-identification-in-artist20 (the Artist20 dataset's own
+paper), trained fully from scratch on this dataset. Val: 67.1% top1 / 82.3%
+top3. Its checkpoint at `results/confound_crnn/best.pt` reproduces the
+submitted `R13921031.json`:
 
-    python -m src.infer_test --model speaker_frontend \
-        --checkpoint results/speaker_frontend/best.pt \
+    python -m src.infer_test --model confound_crnn \
+        --checkpoint results/confound_crnn/best.pt \
         --data_index_dir data/index \
         --out_path R13921031.json
 
-This downloads the pretrained ECAPA-TDNN backbone fresh from HuggingFace/
-speechbrain on first run (not bundled — see "Do not upload" in the
-assignment rules) and loads our trained classifier head on top. Output is
+No pretrained weights are downloaded for this model — every parameter was
+trained on Artist20's train split. Output is
 `{"001": [top1, top2, top3], ...}` for all 233 test tracks, top-3 in
 descending confidence order, matching the assignment's schema.
 
-Other models (any of Task 2's `MODEL_REGISTRY` entries in `src/train.py`:
-`confound_crnn`, `crnn_zain`, `sota_crnn`, `fgnl`, `ssl_frontend`,
-`speaker_frontend`) can be run the same way by swapping `--model` and
-`--checkpoint`; see `README.md` for the full command list (training,
-evaluation, t-SNE, mel-spectrogram demo) and `MATERIALS.md` for every
-model's measured results.
+Other from-scratch models (`crnn_zain`, `sota_crnn`, `fgnl`,
+`confound_crnn_vocals` — a vocal-separation ablation on the same
+architecture) can be run the same way by swapping `--model` and
+`--checkpoint`.
+
+**Baselines using pretrained encoders** (`ssl_frontend` = frozen MERT + a
+trained head, `speaker_frontend` = frozen ECAPA-TDNN speaker embedding + a
+trained head) are included for comparison only, per the assignment doc's own
+"Baseline 1 (optional)" framing and the TA's clarification above — not the
+graded submission, even though `speaker_frontend` scores far higher (95.2%
+top1) than any from-scratch model. Runnable the same way (`--model
+speaker_frontend --checkpoint results/speaker_frontend/best.pt`); see
+`MATERIALS.md` for the full comparison and the deep-dive on why the gap is so
+large.
+
+See `README.md` for the full command list (training, evaluation, t-SNE,
+mel-spectrogram demo) and `MATERIALS.md` for every model's measured results.
 
 Task 1 (traditional ML)
 ------------------------

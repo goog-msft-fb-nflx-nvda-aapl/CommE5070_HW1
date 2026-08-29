@@ -4,6 +4,20 @@ Running index of everything needed for the final `R13921031_report.html` (to be
 assembled separately, on Claude web, from these materials). Update as each
 experiment lands.
 
+**TA clarifications (`TA_discussion.md`, read 2026-08-30) that shape this
+document's framing:**
+- Task 1's accuracy **doesn't count toward the grade at all** — TA grades
+  only on whether the analysis process is reasonable and thorough. (Feature-
+  group ablation / permutation importance below is exactly what's being
+  graded, not the raw SVM number.)
+- Task 2 requires training **both encoder and classifier from scratch**; a
+  pretrained encoder (frozen or fine-tuned) is explicitly "baseline only, not
+  the graded submission" (TA_discussion.md #4). This means `ssl_frontend`
+  (MERT) and `speaker_frontend` (ECAPA-TDNN) — despite `speaker_frontend`
+  scoring far higher than anything else in this project — are **baselines**,
+  not eligible as the Task-2 submission. The graded/submitted model is
+  `confound_crnn` (from scratch). See `readme`'s "Running inference" section.
+
 ## Task 1 — traditional ML
 - Features: MFCC(20)+delta+delta2, chroma, spectral contrast/centroid/bandwidth/
   rolloff, ZCR, tonnetz — mean+std pooled per track, StandardScaler, kNN/SVM(RBF)/
@@ -20,7 +34,10 @@ experiment lands.
   and beats several of — the from-scratch deep architectures below (sota_crnn
   58.4%, fgnl 57.1%), a genuinely interesting result worth calling out in the
   report: careful feature engineering + a classical classifier remains a strong
-  baseline on a dataset this small.
+  baseline on a dataset this small. (Per the TA clarification above, this
+  accuracy number itself isn't what's graded — the feature-group ablation and
+  permutation-importance analysis in "Deep-dive ablations" below, which
+  explains *why* this number is what it is, is the actual graded content.)
 - Took ~4.5 hours on gsm-gpu2 (single-threaded librosa HPSS/tonnetz on
   full-length songs is slow, and `SVC(probability=True)`'s internal 5-fold CV
   compounded it) — noted for next time: chunk/parallelize extraction and cache
@@ -30,28 +47,39 @@ experiment lands.
 All models: chunked 5s inputs, song-level prediction via mean-pooled softmax
 across a track's non-overlapping chunks. Final val-set results:
 
-| model | method | val top1 | val top3 |
-|---|---|---|---|
-| **speaker_frontend** | Method 3 (ECAPA-TDNN + probe) | **0.952** | **0.987** |
-| ssl_frontend | Method 2-4 / Baseline 1 (MERT + probe) | 0.684 | — |
-| confound_crnn | Task-2 core / Method 2-2 (CRNN2D_elu2, raw mixture) | 0.671 | 0.823 |
-| confound_crnn_vocals | Method 2-2 ablation (CRNN2D_elu2, demucs vocals-only) | 0.671 | 0.857 |
-| crnn_zain | Method 2-1 (Zain CRNN2D) | 0.619 | 0.835 |
-| sota_crnn | Method 1 (CRNN, minzwon) | 0.584 | — |
-| fgnl | Method 2-3 (non-local net) | 0.571 | 0.853 |
+| model | eligibility | method | val top1 | val top3 |
+|---|---|---|---|---|
+| **confound_crnn** | **graded submission** | Task-2 core / Method 2-2 (CRNN2D_elu2, raw mixture, from scratch) | **0.671** | **0.823** |
+| confound_crnn_vocals | from-scratch ablation | Method 2-2 (CRNN2D_elu2, demucs vocals-only, from scratch) | 0.671 | 0.857 |
+| crnn_zain | from-scratch | Method 2-1 (Zain CRNN2D, from scratch) | 0.619 | 0.835 |
+| sota_crnn | from-scratch | Method 1 (CRNN, minzwon, from scratch) | 0.584 | — |
+| fgnl | from-scratch | Method 2-3 (non-local net, from scratch) | 0.571 | 0.853 |
+| speaker_frontend | baseline (pretrained encoder) | Method 3 (ECAPA-TDNN + probe) | 0.952 | 0.987 |
+| ssl_frontend | baseline (pretrained encoder) | Method 2-4 / Baseline 1 (MERT + probe) | 0.684 | — |
 
 (`confound_crnn`'s number here was corrected after an unrelated bug — see
 "Ghost retrain" note just below the vocal-separation writeup. The originally-
 reported 0.649/0.853 no longer reflects the checkpoint actually on disk.)
 
-Best model overall: **speaker_frontend** (frozen VoxCeleb-pretrained ECAPA-TDNN
-+ MLP probe) — notably stronger than the music-domain SSL (MERT) and every
-from-scratch CRNN, on this ~950-track training set. Confusion matrix
-(`results/speaker_frontend/confusion_matrix_speaker_frontend.png`) is strongly
-diagonal; t-SNE (`results/speaker_frontend/tsne.png`) shows clean, tight
-per-artist clusters. Report angle: pretrained speaker-verification embeddings
-transferring from spoken to sung voice (Method 3's premise) beat training from
-scratch here by a wide margin, echoing the deep-research synthesis below.
+**Best from-scratch model (the graded Task-2 submission): `confound_crnn`**
+(`CRNN2D_elu2`, the Artist20 paper's own architecture, trained fully from
+scratch — no pretrained weights anywhere in the model). Per TA_discussion.md
+#4, this is the model that actually counts as the Task-2 deliverable; every
+other from-scratch architecture landed within a fairly narrow 57-67% band
+(see "CRNN family" ablation below for why).
+
+**Best model including baselines: `speaker_frontend`** (frozen VoxCeleb-
+pretrained ECAPA-TDNN + MLP probe, 95.2%/98.7%) — dramatically stronger than
+every from-scratch model and the music-domain SSL baseline, but per the TA's
+clarification this is a **baseline only**, not eligible as the Task-2
+submission (see readme). Still the most interesting single result in this
+project and worth leading with in the report's discussion section — the
+sanity-checking and encoder-vs-head analysis under "Deep-dive ablations"
+below is what makes it a defensible, non-suspicious finding rather than just
+a big number. Confusion matrix
+(`results/speaker_frontend/confusion_matrix_speaker_frontend.png`) is
+strongly diagonal; t-SNE (`results/speaker_frontend/tsne.png`) shows clean,
+tight per-artist clusters.
 
 **Bug caught and fixed mid-run**: the first `speaker_frontend` training
 (89.6% top1) had a real correctness bug — `requires_grad=False` freezes a
@@ -348,22 +376,36 @@ Results: `results/audio_llm/val_predictions.json` (includes raw model text
 per track for inspection).
 
 ## Visualizations
-- t-SNE embedding plot: `results/speaker_frontend/tsne.png` (best model, val
-  set) — clean, tight per-artist clusters.
-- Confusion matrices: `results/speaker_frontend/confusion_matrix_*.png` (best
-  model, strongly diagonal), plus one per Task-1 classifier and per Task-2
-  model in their respective `results/<name>/` dirs.
-- Mel-spectrogram + own-recording inference: `results/demo/melspectrogram.png`
-  + `results/demo/prediction.json`. Input: user-supplied clip of "Unstoppable"
-  by Sia (`unstoppable_sia.m4a`, recorded via Voice Memos — not a
-  train_val/test artist, so this is a genuine out-of-distribution probe, not
-  a memorized track). Best model's (`speaker_frontend`) top-3: fleetwood_mac
-  (0.469), roxette (0.232), tori_amos (0.159). Discussion angle: all three are
-  female-fronted (Sia is female) or alto/mezzo-range acts within the 20-artist
-  set — with the true singer entirely absent from the label space, the model
-  falls back to nearest-neighbor vocal timbre among what it knows, which is
-  exactly the behavior you'd hope for from a well-calibrated closed-set
-  classifier facing an open-set input.
+- t-SNE embedding plots: `results/confound_crnn/tsne.png` (the graded
+  from-scratch model, val set — visible per-artist clusters but noisier
+  overlap, e.g. madonna/tori_amos, prince/queen, consistent with its 67.1%
+  top1) and `results/speaker_frontend/tsne.png` (the pretrained-encoder
+  baseline — much cleaner, tighter clusters, consistent with 95.2% top1).
+  Showing both is more informative than either alone: the visual cluster
+  quality tracks the accuracy gap exactly as it should.
+- Confusion matrices: one per Task-1 classifier and per Task-2 model in their
+  respective `results/<name>/` dirs — `results/confound_crnn/` (graded model,
+  clearly diagonal but with visible off-diagonal mass) and
+  `results/speaker_frontend/` (baseline, near-perfectly diagonal) are the two
+  to lead with.
+- Mel-spectrogram + own-recording inference: input is a user-supplied clip of
+  "Unstoppable" by Sia (`unstoppable_sia.m4a`, recorded via Voice Memos — not
+  a train_val/test artist, so this is a genuine out-of-distribution probe,
+  not a memorized track). Ran on both the graded model and the baseline for
+  contrast:
+  - `results/demo_confound_crnn/` (graded `confound_crnn`): top-3 madonna
+    (0.458), radiohead (0.175), prince (0.114).
+  - `results/demo/` (baseline `speaker_frontend`): top-3 fleetwood_mac
+    (0.469), roxette (0.232), tori_amos (0.159) — all female-fronted/alto-
+    range acts, a sensible nearest-neighbor-in-timbre fallback for an
+    unknown singer.
+  - Discussion angle: the two models don't even agree with each other on
+    this out-of-distribution input, which is itself informative — with the
+    true singer entirely absent from the 20-artist label space, "top-3"
+    here reflects each model's own notion of vocal-timbre similarity, not a
+    right/wrong answer, and the disagreement is a visible symptom of the
+    accuracy/representation-quality gap between the two models rather than
+    a bug in either.
 
 ## Citations
 (see per-file docstrings in `src/models/*.py` for full citations; summary:)
