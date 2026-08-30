@@ -42,6 +42,8 @@ def load_ensemble_spec(path):
 # (name, spec) — spec is a list of (model_name, weight) pairs; weight=1 for
 # a lone model. Comparisons below reference these by name.
 SYSTEMS = {
+    "sota_crnn": [("sota_crnn", 1)],
+    "speaker_frontend": [("speaker_frontend", 1)],
     "sota_crnn_wide": [("sota_crnn_wide", 1)],
     "singer_senet": [("singer_senet", 1)],
     "ensemble2_9model": load_ensemble_spec("results/ensemble2/ensemble_result.json"),

@@ -1,5 +1,46 @@
 # Experiment log
 
+## 2026-08-31 — calibration analysis: all models systematically underconfident, not overconfident
+
+Continued down round-6's "not implemented this pass" list. Picked
+calibration first (cheap — reuses `src/analysis_significance.py`'s
+`get_probs`/`SYSTEMS` infra, no retraining) and checked per-album error
+clustering's actual feasibility before attempting it.
+
+**Per-album clustering: not a new analysis after all.** val.json's file
+paths already carry album names (e.g. `.../aerosmith/Pump/01-...mp3`) so
+this looked cheap, but checking first: every artist has *exactly one* album
+in val (matches the assignment's 4-train/1-val split), so "per-album val
+accuracy" is mathematically the same grouping as "per-artist val accuracy,"
+already reported everywhere in this document. No new signal available this
+way — noted in MATERIALS.md rather than silently implementing a redundant
+script.
+
+**Calibration: implemented (`src/analysis_calibration.py`), and the
+result is the opposite of what the Sia demo's single-clip anecdote
+suggested.** Added `sota_crnn`/`speaker_frontend` to `SYSTEMS` in
+`src/analysis_significance.py` for a fuller accuracy-range comparison. ECE
+(15-bin) + multiclass Brier score + reliability diagrams
+(`results/analysis/calibration.json`, `reliability_diagrams.png`) across
+4 systems (0.762 to 0.952 val accuracy): **every single reliability-diagram
+bin, for every system, sits above the y=x line** — all four systems are
+systematically *under*confident, not overconfident, and it gets worse as
+accuracy improves (`speaker_frontend`: 95.2% accurate, only 46.4% average
+stated confidence — a 49pp gap; ECE climbs 0.255→0.273→0.373→0.488 as
+accuracy climbs 0.762→0.805→0.861→0.952). Traced this to a real, mechanical
+cause rather than treating it as mysterious: `src/evaluate.py`'s song-level
+aggregation mean-pools softmax probabilities across every 5s chunk in a
+track, and averaging multiple peaked distributions is inherently flatter
+than any one of them — even a track classified correctly by every single
+chunk ends up with a diluted final confidence. This is a property of the
+evaluation convention, not a training defect, and doesn't need fixing
+before submission — but it does mean the Sia demo's per-model confidence
+numbers should be read as relative (useful for comparing models against
+each other on that one clip) rather than as absolute evidence of
+calibration quality. Full table and discussion: MATERIALS.md's error-
+analysis section.
+
+
 ## 2026-08-31 — round-6 responses read; statistical-significance analysis implemented and run
 
 Four responses landed for round 6 (ChatGPT, Gemini, Perplexity, Qwen —

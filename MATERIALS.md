@@ -718,17 +718,55 @@ concrete number for the report than the existing Cohen's-kappa/disagreement-
 rate metrics alone (`results/analysis/ensemble_diversity.json`, computed
 earlier over a different, smaller model subset).
 
-**Not implemented this pass** (all four responses agreed these matter, but
-each needs either new inference passes or new metadata this project doesn't
-currently expose, not just re-scoring existing predictions — noted rather
-than silently dropped):
-- **Calibration** (reliability diagrams, Expected Calibration Error, Brier
-  score) — flagged by all four as especially relevant given the Sia demo's
-  flat-vs-confident-but-wrong contrast between models.
-- **Per-album error clustering** — checking whether errors still concentrate
-  on specific held-out albums even after the album-level split, as a
-  residual-confound diagnostic. Would need album identifiers joined into
-  the val index, which isn't currently exposed by `src/data/prepare_index.py`.
+**Calibration (implemented, 2026-08-31)**: `src/analysis_calibration.py`,
+`results/analysis/calibration.json` + `reliability_diagrams.png`. ECE (15
+equal-width bins), multiclass Brier score, and per-bin reliability diagrams
+for four systems spanning the accuracy range (`sota_crnn` 0.762,
+`sota_crnn_wide` 0.805, the 14-model ensemble 0.861, `speaker_frontend`
+baseline 0.952):
+
+| system | accuracy | mean confidence | ECE | Brier |
+|---|---|---|---|---|
+| sota_crnn | 0.762 | 0.507 | 0.255 | 0.430 |
+| sota_crnn_wide | 0.805 | 0.533 | 0.273 | 0.377 |
+| ensemble4_14model | 0.861 | 0.488 | 0.373 | 0.393 |
+| speaker_frontend | 0.952 | 0.464 | 0.488 | 0.373 |
+
+**Finding, and it's the opposite of what the Sia demo's anecdote (one
+clip, out-of-distribution) suggested about in-distribution val behavior**:
+every system is systematically *under*confident on val, not overconfident —
+in the reliability diagrams every single bin sits above the y=x diagonal
+(observed accuracy > stated confidence), for all four systems, at every
+confidence level. And ECE gets *worse*, not better, as accuracy improves:
+`speaker_frontend` is right 95.2% of the time but its own predicted
+probability for its top guess averages only 46.4% — a 49pp gap. This isn't
+a training-quality problem; it's a direct, mechanical consequence of this
+project's song-level evaluation convention (`src/evaluate.py::
+aggregate_predict`): each track's final probability vector is the *mean* of
+many independent 5s-chunk softmax outputs, and averaging several peaked
+distributions necessarily produces a flatter one, even when every individual
+chunk (and the final argmax) is correct — the more chunks a track has, the
+more this dilutes stated confidence toward uniform, independent of whether
+the prediction is actually right. Worth stating plainly in the report as a
+known, explained property of the evaluation pipeline (not a defect to fix
+before submission) — and worth flagging that the Sia demo's confidence
+numbers should be read as *relative* across models on that one clip, not as
+evidence any model is well-calibrated in an absolute sense.
+
+**Not implemented this pass** (all four round-6 responses flagged these too,
+each needing either new inference passes or new metadata this project
+doesn't currently expose, not just re-scoring existing predictions — noted
+rather than silently dropped):
+- **Per-album error clustering** — checked whether this is actually possible
+  first: the val split has *exactly one album per artist* (20 albums total,
+  matching the assignment's stated 4-train/1-val album split), so grouping
+  val errors "by album" is mathematically identical to the per-artist
+  accuracy breakdown already reported throughout this document — there is no
+  separate album-level signal to extract from val alone. A genuinely new
+  version of this diagnostic would need to compare *train*-album accuracy
+  variance within an artist (4 albums each) against val performance, which
+  is a different, harder question than what was asked; not pursued this
+  pass.
 - **Embedding geometry beyond t-SNE** (intra- vs. inter-artist cosine
   distance, silhouette score) — all four independently warned that a t-SNE
   plot alone isn't a rigorous representation-quality metric.
