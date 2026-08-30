@@ -1,0 +1,18 @@
+{
+  "audio_path": "unstoppable_sia.wav",
+  "model": "sota_crnn",
+  "top3": [
+    [
+      "madonna",
+      0.22428759932518005
+    ],
+    [
+      "fleetwood_mac",
+      0.12362942099571228
+    ],
+    [
+      "roxette",
+      0.10755878686904907
+    ]
+  ]
+}
