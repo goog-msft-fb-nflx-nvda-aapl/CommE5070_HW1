@@ -178,10 +178,14 @@ class CRNN(nn.Module):
     trained, 0.762 val top1) architecture."""
 
     def __init__(self, sample_rate=16000, n_fft=512, f_min=0.0, f_max=8000.0, n_mels=96, n_class=20,
-                 channel_mult=1.0):
+                 channel_mult=1.0, normalize_mel=False):
         super().__init__()
         c1, c2, c3, c4 = (max(8, round(c * channel_mult)) for c in (64, 128, 128, 128))
         gru_hidden = max(4, round(32 * channel_mult))
+        self.normalize_mel = normalize_mel  # per-sample (mel-mean)/std, matching the
+        # user's prior-run pipeline (dataset.py there normalizes each mel
+        # chunk individually) — tested directly here rather than assumed
+        # redundant with our models' existing BatchNorm2d(1) input norm.
 
         self.spec = torchaudio.transforms.MelSpectrogram(
             sample_rate=sample_rate, n_fft=n_fft, f_min=f_min, f_max=f_max, n_mels=n_mels
@@ -202,6 +206,12 @@ class CRNN(nn.Module):
     def embed(self, x):
         x = self.spec(x)
         x = self.to_db(x)
+        if self.normalize_mel:
+            n = x.size(0)
+            flat = x.reshape(n, -1)
+            mean = flat.mean(dim=1).view(n, 1, 1)
+            std = flat.std(dim=1).view(n, 1, 1)
+            x = (x - mean) / (std + 1e-6)
         x = x.unsqueeze(1)
         x = self.spec_bn(x)
 
