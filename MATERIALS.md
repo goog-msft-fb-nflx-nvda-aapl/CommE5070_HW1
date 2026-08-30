@@ -203,12 +203,19 @@ that 10s chunks should beat 5s for this task — already what
 ensembles (per our prior-year run) should beat same-family hyperparameter
 ensembles (matches our own +4.8pp vs. their +11pp), though they directly
 **disagree** on whether porting the prior submission's classic non-local
-ResNet/channel-ramped SE-ResNet is worth it — unresolved, not adopted
-either way, see EXPERIMENT_LOG.md for the full breakdown. One of Gemini's
-citations (footnote 12, backing its entire ensemble-diversity argument)
-resolves to an unrelated electricity-load-forecasting paper — a fabricated/
-mismatched citation, flagged, not trusted as a source even though the
-underlying math is textbook-correct.
+ResNet/channel-ramped SE-ResNet is worth it — settled directly by porting
+and training both (`src/models/singer_senet.py`,
+`src/models/nonlocal_singernet.py`); see EXPERIMENT_LOG.md for results once
+in. One of Gemini's citations (footnote 12, backing its entire ensemble-
+diversity argument) resolves to an unrelated electricity-load-forecasting
+paper — a fabricated/mismatched citation, flagged, not trusted as a source
+even though the underlying math is textbook-correct. A second citation
+(DAMFF, footnote 22) is real and correctly a 2023 ISMIR paper, but on
+inspection it's a music-*emotion-regression* method (valence-arousal over
+time), not singer/artist classification — presented as directly relevant
+precedent without that mismatch being noted; checked before building
+anything on it, not ported this pass (see EXPERIMENT_LOG.md for the
+reasoning).
 
 Two new ablations launched off the parts of both responses that were cheap,
 concrete, and not already covered: **ArcFace/AAM-Softmax margin head**

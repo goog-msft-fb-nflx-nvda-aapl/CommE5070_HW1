@@ -1,5 +1,32 @@
 # Experiment log
 
+## 2026-08-30 — DAMFF checked and not pursued (another mismatched round-5 citation)
+
+While the two prior-year-architecture ports (`singer_senet`,
+`nonlocal_singernet`) trained, checked whether Gemini's round-5-cited DAMFF
+("Dual Attention-based Multi-scale Feature Fusion," works-cited #22,
+archives.ismir.net/ismir2023/paper/000023.pdf) was worth porting as a fourth
+new architecture. Fetched and read the actual paper rather than trusting
+Gemini's paraphrase (same verify-before-building standard as the faithful
+architecture ports) — it's real and correctly a 2023 ISMIR paper, but it's
+**"Dual Attention-based Multi-scale Feature Fusion Approach for Dynamic
+Music Emotion Recognition"** (Zhang, Yang, Zhang, Luo): a valence-arousal
+*regression* method for continuous emotion prediction over time (BiLSTM +
+FC regression head, evaluated on MER1101/DEAM2015), not a singer/artist
+classification paper and not validated on anything like Artist20's task or
+scale. Gemini's response presented it as directly relevant precedent for
+"small-data audio classification" without noting the task/domain mismatch —
+a second instance of the same citation-quality issue as footnote 12 (see the
+round-5 entry below): a real, correctly-linked paper, but its applicability
+here was overstated, not fabricated outright. The underlying idea (parallel
+multi-scale conv branches + a channel+spatial dual-attention fusion module,
+"SCAM") is architecturally adaptable to classification in principle, but
+without a task-relevant precedent to anchor confidence in the port, and with
+GPU capacity already committed to two better-grounded ablations, **not
+implemented this pass** — noted here so it isn't silently dropped, and can
+be revisited if the current queue clears with idle GPU time to spare.
+
+
 ## 2026-08-30 — resolving the Gemini/Qwen non-local/SE-ResNet disagreement directly
 
 Round-5's one unresolved item: Gemini recommended porting the prior-year
