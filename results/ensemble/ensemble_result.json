@@ -1,0 +1,24 @@
+{
+  "models": [
+    "confound_crnn",
+    "crnn_zain",
+    "sota_crnn",
+    "fgnl"
+  ],
+  "weights": [
+    0,
+    1,
+    2,
+    0
+  ],
+  "val_metrics": {
+    "top1": 0.7922077922077922,
+    "top3": 0.8874458874458875
+  },
+  "individual_val_top1": {
+    "confound_crnn": 0.6926406926406926,
+    "crnn_zain": 0.70995670995671,
+    "sota_crnn": 0.7619047619047619,
+    "fgnl": 0.5714285714285714
+  }
+}

@@ -1,5 +1,34 @@
 # Experiment log
 
+## 2026-08-30 — ablation queue results (batch 1)
+
+1. **Ensemble** (`src/ensemble.py`, `results/ensemble/ensemble_result.json`):
+   grid-searched integer weights 0-3 over confound_crnn/crnn_zain/sota_crnn/
+   fgnl(v1) on val. Best: crnn_zain×1 + sota_crnn×2 → **top1=0.7922,
+   top3=0.8874**, +3.0pp over sota_crnn alone (0.7619). Smaller gain than the
+   user's prior run's +11pp — plausible cause: our 4 models are more
+   correlated (all CRNN-family, similar training recipe) vs their 3
+   architecturally-distinct models; also 231 val tracks with a 4^4=256-point
+   weight grid search carries real overfit-to-val risk, flagged not hidden.
+6. **Random-crop TTA comparison** (`src/analysis_tta_comparison.py`,
+   `results/analysis/tta_comparison_sota_crnn.json`), directly testing the
+   user's prior-run claim rather than assuming it doesn't transfer: on
+   sota_crnn val — single random crop **0.550**, 10 random crops averaged
+   **0.723**, our default full-track non-overlapping-tile average **0.762**.
+   Confirms their finding's *shape* (multi-crop >> single-crop, a real and
+   large effect) but also confirms our existing default already captures
+   more of that gain than their exact 10-crop method would, since it covers
+   the whole track rather than a random subsample. Time-shift TTA (batch 0,
+   see lecture02 section below) stays a negative result; this random-crop
+   variant is a *positive but already-subsumed* result — no change needed
+   to the submission pipeline.
+2. **AdamW + label_smoothing=0.1** on sota_crnn: launched
+   (`results/sota_crnn_adamw_ls/`, `train_sota_adamw_ls.log`), in progress.
+
+Still queued (3-5, 7-13 from the list below): per-sample mel normalization,
+10s segments, attention pooling, SE blocks, capacity sweep, DropBlock, SWA,
+SupCon, SSL pretraining. Launching as GPU slots free.
+
 ## 2026-08-30 — lecture02 scrutiny + user's prior-run comparison + master ablation queue
 
 **lecture02_classification.md scrutiny**: added `ShortChunkCNN_Res` and

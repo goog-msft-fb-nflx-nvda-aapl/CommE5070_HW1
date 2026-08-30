@@ -86,6 +86,8 @@ def main():
     ap.add_argument("--remix_dir", default=None,
                      help="dir with train.json (vocals) + train_accompaniment.json (accompaniment) "
                           "for cross-song remix training (mel models only) — see src/data/remix_dataset.py")
+    ap.add_argument("--optimizer", default="adam", choices=["adam", "adamw"])
+    ap.add_argument("--label_smoothing", type=float, default=0.0)
     ap.add_argument("--device", default="cuda" if torch.cuda.is_available() else "cpu")
     args = ap.parse_args()
 
@@ -103,9 +105,10 @@ def main():
         num_workers=args.num_workers, drop_last=True, persistent_workers=args.num_workers > 0,
     )
 
-    opt = torch.optim.Adam(model.parameters(), lr=args.lr, weight_decay=args.weight_decay)
+    opt_cls = torch.optim.AdamW if args.optimizer == "adamw" else torch.optim.Adam
+    opt = opt_cls(model.parameters(), lr=args.lr, weight_decay=args.weight_decay)
     scheduler = None if args.no_scheduler else torch.optim.lr_scheduler.CosineAnnealingLR(opt, T_max=args.epochs)
-    criterion = nn.CrossEntropyLoss()
+    criterion = nn.CrossEntropyLoss(label_smoothing=args.label_smoothing)
 
     best_top1 = -1.0
     best_epoch = -1
