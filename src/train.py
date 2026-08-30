@@ -103,6 +103,9 @@ def main():
     ap.add_argument("--supcon_weight", type=float, default=0.0,
                      help="if >0, add lambda*SupCon(embed) to the CE loss — see src/supcon_loss.py")
     ap.add_argument("--supcon_temperature", type=float, default=0.1)
+    ap.add_argument("--init_encoder", default=None,
+                     help="path to a src/pretrain_ssl.py encoder.pt checkpoint — loads matching "
+                          "(non-classifier-head) weights before supervised training")
     ap.add_argument("--device", default="cuda" if torch.cuda.is_available() else "cpu")
     args = ap.parse_args()
 
@@ -113,6 +116,13 @@ def main():
 
     model_fn, kind = MODEL_REGISTRY[args.model]
     model = model_fn(len(labels)).to(args.device)
+
+    if args.init_encoder:
+        ckpt = torch.load(args.init_encoder, map_location=args.device, weights_only=True)
+        missing, unexpected = model.load_state_dict(ckpt["encoder_state"], strict=False)
+        print(f"loaded SSL-pretrained encoder from {args.init_encoder} "
+              f"({len(missing)} missing / {len(unexpected)} unexpected keys — "
+              f"missing should just be the classifier head)")
 
     train_ds, val_ds = build_datasets(kind, args.data_index_dir, remix_dir=args.remix_dir, augment=not args.no_augment)
     train_loader = DataLoader(
