@@ -12,17 +12,35 @@ from torch.utils.data import DataLoader
 
 
 @torch.no_grad()
-def aggregate_predict(model, eval_dataset, device, n_class):
+def aggregate_predict(model, eval_dataset, device, n_class, tta_shifts=None):
     """eval_dataset yields (chunks[n_chunks, ...], label_idx_or_-1, key).
-    Returns (keys, true_labels[N] or None, probs[N, n_class])."""
+    Returns (keys, true_labels[N] or None, probs[N, n_class]).
+
+    `tta_shifts`: optional list of fractional time-shifts (e.g. [0.25, -0.25])
+    for test-time augmentation. Each chunk is additionally evaluated after a
+    circular roll along its last (time) axis by that fraction of its length,
+    and softmax probabilities are averaged across shifts *and* chunks — a
+    temporal-jitter multi-crop ensemble, modality-agnostic (works identically
+    for precomputed log-mel chunks [n_mels, T] and raw waveform chunks
+    [n_samples]). A roll preserves all information (unlike a mask/crop), so
+    it's safe to use at test time even though the model never saw shifted
+    inputs during training. Per lecture02_classification.md's data
+    augmentation section — extending the idea to inference time.
+    """
     model.eval()
     loader = DataLoader(eval_dataset, batch_size=1, shuffle=False, collate_fn=lambda b: b[0])
+    shifts = [0.0] + list(tta_shifts) if tta_shifts else [0.0]
 
     keys, trues, probs = [], [], []
     for chunks, label, key in loader:
         chunks = chunks.to(device)
-        logits = model(chunks)
-        p = torch.softmax(logits, dim=1).mean(dim=0).cpu().numpy()
+        view_probs = []
+        for frac in shifts:
+            shift = int(round(frac * chunks.shape[-1]))
+            view = torch.roll(chunks, shifts=shift, dims=-1) if shift != 0 else chunks
+            logits = model(view)
+            view_probs.append(torch.softmax(logits, dim=1))
+        p = torch.cat(view_probs, dim=0).mean(dim=0).cpu().numpy()
         keys.append(key)
         trues.append(label)
         probs.append(p)
@@ -62,16 +80,16 @@ def plot_confusion_matrix(cm, labels, out_path, title):
     plt.close(fig)
 
 
-def evaluate_metrics_only(model, eval_dataset, device, n_class):
+def evaluate_metrics_only(model, eval_dataset, device, n_class, tta_shifts=None):
     """Cheap per-epoch check: no plot/file I/O."""
-    _, trues, probs = aggregate_predict(model, eval_dataset, device, n_class)
+    _, trues, probs = aggregate_predict(model, eval_dataset, device, n_class, tta_shifts=tta_shifts)
     metrics, _ = compute_metrics(trues, probs, n_class)
     return metrics
 
 
-def evaluate_and_save(model, eval_dataset, device, labels, out_dir, tag):
+def evaluate_and_save(model, eval_dataset, device, labels, out_dir, tag, tta_shifts=None):
     os.makedirs(out_dir, exist_ok=True)
-    keys, trues, probs = aggregate_predict(model, eval_dataset, device, len(labels))
+    keys, trues, probs = aggregate_predict(model, eval_dataset, device, len(labels), tta_shifts=tta_shifts)
     metrics, cm = compute_metrics(trues, probs, len(labels))
     plot_confusion_matrix(cm, labels, os.path.join(out_dir, f"confusion_matrix_{tag}.png"),
                            title=f"{tag} — val confusion matrix (top1={metrics['top1']:.3f})")

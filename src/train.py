@@ -24,6 +24,7 @@ from src.models.confound_crnn import CRNN2D_elu2
 from src.models.crnn_zain import CRNN2D
 from src.models.nonlocal_fgnl import CRNN_FGNL
 from src.models.sota_cnn import CRNN as SotaCRNN
+from src.models.sota_cnn import SampleCNN, ShortChunkCNN_Res
 
 def _build_ssl_frontend(n_class):
     from src.models.ssl_frontend import SSLLinearProbe
@@ -42,6 +43,8 @@ MODEL_REGISTRY = {
     "crnn_zain": (lambda n_class: CRNN2D(n_class=n_class), "mel"),
     "fgnl": (lambda n_class: CRNN_FGNL(n_class=n_class), "mel"),
     "sota_crnn": (lambda n_class: SotaCRNN(n_class=n_class), "wave"),
+    "short_chunk_cnn": (lambda n_class: ShortChunkCNN_Res(n_class=n_class), "wave"),
+    "sample_cnn": (lambda n_class: SampleCNN(n_class=n_class), "wave"),
     # ssl_frontend / speaker_frontend need torch>=2.6 (HF safetensors-only
     # torch.load policy) — run these with the separate `hw1_ssl_env` conda
     # env on gsm-gpu2, not the main `hw1_singer_env`. See
@@ -51,7 +54,7 @@ MODEL_REGISTRY = {
 }
 
 
-def build_datasets(model_kind, index_dir, remix_dir=None):
+def build_datasets(model_kind, index_dir, remix_dir=None, augment=True):
     train_path = os.path.join(index_dir, "train.json")
     val_path = os.path.join(index_dir, "val.json")
     if model_kind == "mel":
@@ -60,11 +63,11 @@ def build_datasets(model_kind, index_dir, remix_dir=None):
 
             vocals_path = os.path.join(remix_dir, "train.json")
             accompaniment_path = os.path.join(remix_dir, "train_accompaniment.json")
-            train_ds = RemixMelChunkTrainDataset(train_path, vocals_path, accompaniment_path)
+            train_ds = RemixMelChunkTrainDataset(train_path, vocals_path, accompaniment_path, augment=augment)
         else:
-            train_ds = MelChunkTrainDataset(train_path)
+            train_ds = MelChunkTrainDataset(train_path, augment=augment)
         return train_ds, MelChunkEvalDataset(val_path)
-    return WaveformTrainDataset(train_path), WaveformEvalDataset(val_path)
+    return WaveformTrainDataset(train_path, augment=augment), WaveformEvalDataset(val_path)
 
 
 def main():
@@ -79,6 +82,7 @@ def main():
     ap.add_argument("--patience", type=int, default=10)
     ap.add_argument("--num_workers", type=int, default=8)
     ap.add_argument("--no_scheduler", action="store_true", help="disable cosine LR decay")
+    ap.add_argument("--no_augment", action="store_true", help="disable SpecAugment/waveform augmentation")
     ap.add_argument("--remix_dir", default=None,
                      help="dir with train.json (vocals) + train_accompaniment.json (accompaniment) "
                           "for cross-song remix training (mel models only) — see src/data/remix_dataset.py")
@@ -93,7 +97,7 @@ def main():
     model_fn, kind = MODEL_REGISTRY[args.model]
     model = model_fn(len(labels)).to(args.device)
 
-    train_ds, val_ds = build_datasets(kind, args.data_index_dir, remix_dir=args.remix_dir)
+    train_ds, val_ds = build_datasets(kind, args.data_index_dir, remix_dir=args.remix_dir, augment=not args.no_augment)
     train_loader = DataLoader(
         train_ds, batch_size=args.batch_size, shuffle=True,
         num_workers=args.num_workers, drop_last=True, persistent_workers=args.num_workers > 0,

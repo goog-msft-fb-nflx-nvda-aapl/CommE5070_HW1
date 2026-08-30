@@ -26,7 +26,10 @@ def main():
     ap.add_argument("--data_index_dir", required=True)
     ap.add_argument("--out_path", required=True)
     ap.add_argument("--device", default="cuda" if torch.cuda.is_available() else "cpu")
+    ap.add_argument("--tta", action="store_true",
+                     help="test-time augmentation: average predictions over time-shifted views too")
     args = ap.parse_args()
+    tta_shifts = [0.25, -0.25, 0.5] if args.tta else None
 
     with open(f"{args.data_index_dir}/labels.json") as f:
         labels = json.load(f)
@@ -42,7 +45,7 @@ def main():
     else:
         test_ds = WaveformEvalDataset(test_path, has_labels=False)
 
-    keys, _, probs = aggregate_predict(model, test_ds, args.device, len(labels))
+    keys, _, probs = aggregate_predict(model, test_ds, args.device, len(labels), tta_shifts=tta_shifts)
 
     top3_idx = probs.argsort(axis=1)[:, ::-1][:, :3]
     result = {key: [labels[i] for i in idxs] for key, idxs in zip(keys, top3_idx)}

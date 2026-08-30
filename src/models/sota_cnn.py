@@ -26,7 +26,7 @@ citation) is used instead and runs fine at 5s.
 import torch.nn as nn
 import torchaudio
 
-from .common import Conv_2d
+from .common import Conv_1d, Conv_2d, Res_2d
 
 
 class FCN(nn.Module):
@@ -59,6 +59,109 @@ class FCN(nn.Module):
         x = self.layer4(x)
         x = self.layer5(x)
         return x.view(x.size(0), -1)
+
+    def forward(self, x):
+        emb = self.embed(x)
+        return self.dense(self.dropout(emb))
+
+
+class ShortChunkCNN_Res(nn.Module):
+    """Won et al. 2020 SMC, "Evaluation of CNN-based automatic music tagging
+    models" — a VGG-ish 7-block residual CNN, highlighted as a top exemplar
+    in lecture02_classification.md slides 77-79. Deeper/narrower receptive
+    field than FCN/CRNN above; residual connections via `Res_2d` (already
+    ported in common.py for other models)."""
+
+    def __init__(self, n_channels=128, sample_rate=16000, n_fft=512, f_min=0.0, f_max=8000.0,
+                 n_mels=128, n_class=20):
+        super().__init__()
+        self.spec = torchaudio.transforms.MelSpectrogram(
+            sample_rate=sample_rate, n_fft=n_fft, f_min=f_min, f_max=f_max, n_mels=n_mels
+        )
+        self.to_db = torchaudio.transforms.AmplitudeToDB()
+        self.spec_bn = nn.BatchNorm2d(1)
+
+        self.layer1 = Res_2d(1, n_channels, stride=2)
+        self.layer2 = Res_2d(n_channels, n_channels, stride=2)
+        self.layer3 = Res_2d(n_channels, n_channels * 2, stride=2)
+        self.layer4 = Res_2d(n_channels * 2, n_channels * 2, stride=2)
+        self.layer5 = Res_2d(n_channels * 2, n_channels * 2, stride=2)
+        self.layer6 = Res_2d(n_channels * 2, n_channels * 2, stride=2)
+        self.layer7 = Res_2d(n_channels * 2, n_channels * 4, stride=2)
+
+        self.dense1 = nn.Linear(n_channels * 4, n_channels * 4)
+        self.bn = nn.BatchNorm1d(n_channels * 4)
+        self.dense2 = nn.Linear(n_channels * 4, n_class)
+        self.dropout = nn.Dropout(0.5)
+        self.relu = nn.ReLU()
+
+    def embed(self, x):
+        x = self.spec(x)
+        x = self.to_db(x)
+        x = x.unsqueeze(1)
+        x = self.spec_bn(x)
+
+        x = self.layer1(x)
+        x = self.layer2(x)
+        x = self.layer3(x)
+        x = self.layer4(x)
+        x = self.layer5(x)
+        x = self.layer6(x)
+        x = self.layer7(x)
+        x = x.squeeze(2)
+
+        if x.size(-1) != 1:
+            x = nn.MaxPool1d(x.size(-1))(x)
+        x = x.squeeze(2)
+
+        x = self.dense1(x)
+        x = self.bn(x)
+        return self.relu(x)
+
+    def forward(self, x):
+        emb = self.embed(x)
+        return self.dense2(self.dropout(emb))
+
+
+class SampleCNN(nn.Module):
+    """Lee et al. 2017 SMC, "Sample-level deep convolutional neural networks
+    for music auto-tagging using raw waveforms" — end-to-end, operates
+    directly on raw audio samples rather than a spectrogram front-end.
+    Matches lecture02_classification.md's "sample-level CNN" / "end-to-end
+    learning" framing (slides 47d, 71, 75) — architecturally the most
+    distinct from-scratch option in this project (every other model starts
+    from a mel-spectrogram)."""
+
+    def __init__(self, n_class=20):
+        super().__init__()
+        self.layer1 = Conv_1d(1, 128, shape=3, stride=3, pooling=1)
+        self.layer2 = Conv_1d(128, 128, shape=3, stride=1, pooling=3)
+        self.layer3 = Conv_1d(128, 128, shape=3, stride=1, pooling=3)
+        self.layer4 = Conv_1d(128, 256, shape=3, stride=1, pooling=3)
+        self.layer5 = Conv_1d(256, 256, shape=3, stride=1, pooling=3)
+        self.layer6 = Conv_1d(256, 256, shape=3, stride=1, pooling=3)
+        self.layer7 = Conv_1d(256, 256, shape=3, stride=1, pooling=3)
+        self.layer8 = Conv_1d(256, 256, shape=3, stride=1, pooling=3)
+        self.layer9 = Conv_1d(256, 256, shape=3, stride=1, pooling=3)
+        self.layer10 = Conv_1d(256, 512, shape=3, stride=1, pooling=3)
+        self.layer11 = Conv_1d(512, 512, shape=1, stride=1, pooling=1)
+        self.dropout = nn.Dropout(0.5)
+        self.dense = nn.Linear(512, n_class)
+
+    def embed(self, x):
+        x = x.unsqueeze(1)
+        x = self.layer1(x)
+        x = self.layer2(x)
+        x = self.layer3(x)
+        x = self.layer4(x)
+        x = self.layer5(x)
+        x = self.layer6(x)
+        x = self.layer7(x)
+        x = self.layer8(x)
+        x = self.layer9(x)
+        x = self.layer10(x)
+        x = self.layer11(x)
+        return x.squeeze(-1)
 
     def forward(self, x):
         emb = self.embed(x)
