@@ -1,6 +1,6 @@
 # Deep Research prompts and responses
 
-Four rounds of externally-run research, used to inform architecture, data,
+Five rounds of externally-run research, used to inform architecture, data,
 and training-recipe decisions in this project. Each round is a prompt we
 wrote (`prompt.md`), relayed to one or more research assistants (Gemini,
 Perplexity, ChatGPT, and/or Qwen — whichever we had access to for that
@@ -23,6 +23,13 @@ findings were synthesized into our actual decisions and experiments.
   self-supervised (SimCLR-style) contrastive pretraining recipe, since a
   pretrained encoder isn't eligible as the graded submission for this
   assignment.
+- **round5_prior_year_gap_and_latest_literature** — problem statement,
+  current pipeline/architectures, and a specific gap found while
+  re-investigating our own prior-year submission for this assignment
+  (attention pooling and per-sample mel normalization were only tested on a
+  smaller backbone than the one that originally used them); asks for
+  literature grounding on that gap plus the latest (2023-2026) ICASSP/
+  Interspeech/AAAI/NeurIPS work on from-scratch, small-N singer/artist ID.
 
 Some responses cite hyperparameters or claims without a traceable source;
 where that happened, we noted it explicitly in `MATERIALS.md`/

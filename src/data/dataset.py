@@ -26,6 +26,7 @@ from torch.utils.data import Dataset
 SR = 16000
 CHUNK_SECONDS = 5.0
 CHUNK_SAMPLES = int(SR * CHUNK_SECONDS)  # 80000
+CHUNK_SAMPLES_10S = int(SR * 10.0)  # 160000 — crnn_nasrullah_faithful only
 
 MEL_N_FFT = 2048
 MEL_HOP = 512

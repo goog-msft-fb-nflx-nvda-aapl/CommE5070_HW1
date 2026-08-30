@@ -1,5 +1,74 @@
 # Experiment log
 
+## 2026-08-30 — prior-year submission re-investigated; faithful-CRNN gap found and launched
+
+User asked us to re-investigate our own prior-year submission
+(github.com/goog-msft-fb-nflx-nvda-aapl/NTU, `CommE5070.../hw1/hw1_submission`)
+since its reported ensemble (0.825/0.949) looked like it might beat this
+project's current ensemble (0.853/0.905). Cloned it (sparse checkout, partial
+blobless clone — the `NTU` repo is ~800MB total across many unrelated
+courses) and read `report.md` + all 4 model/inference scripts in full.
+
+**Not a like-for-like comparison.** Their `dataset.py::get_split` self-splits
+train_val by taking each artist's alphabetically-last album as "val"
+(946 train / 234 val) — a different val set from this project's official,
+assignment-provided `train.json`/`val.json` (949/231). Their val accuracy and
+ours are measured on different tracks; a raw number comparison isn't valid
+without re-running one pipeline on the other's split. Under the report's own
+guessed scoring formula (top1 + 0.5×top3) our ensemble already edges theirs
+slightly: ours 0.853+0.5×0.905=**1.305** vs theirs 0.825+0.5×0.949=**1.2995**
+— but this is on different val sets, so read this as "not obviously behind,"
+not "ahead."
+
+**Real gap found, not previously closed.** Our existing ablations tested the
+divergent *ingredients* of their CRNN (attention pooling via `sota_crnn_attn`,
+per-sample mel norm via `sota_crnn_norm`) each bolted onto `sota_crnn`'s
+architecture — a small, unidirectional, 32-hidden-dim GRU bottleneck (see
+`src/models/sota_cnn.py`). Their actual CRNN is a *different, larger*
+architecture entirely: bidirectional GRU (hidden=256, 2 layers), attention
+pooling over the *whole* sequence, 4 Conv-BN-ELU blocks up to 256 channels,
+10s training crops, f_min=20/f_max=8000, `top_db=80`. Nobody had ported this
+whole thing faithfully as one model — so "attention pooling hurt (-10.8pp)"
+in this project's ablation table tests attention pooling *on a low-capacity
+backbone that isn't theirs*, not attention pooling itself. This confounds
+the negative result, doesn't necessarily refute their approach.
+
+Ported it faithfully as `src/models/crnn_nasrullah_faithful.py`
+(`CRNNNasrullahFaithful`) — every architectural/training-recipe choice from
+their `task2_dl_v2.py` copied as-is (see the model's docstring for the exact
+line-by-line diff vs. `sota_crnn`/`CRNN_Attn`/`crnn_zain`), changing only
+what's forced by using this repo's official split and song-level mean-pooled
+eval instead of their self-split + 10-random-crop TTA (that TTA method is
+separately already shown *not* to beat our default full-track averaging —
+`src/analysis_tta_comparison.py`, see the 2026-08-30 "lecture02 scrutiny"
+entry below — so intentionally not re-adopted here). Added `--model
+crnn_nasrullah_faithful` to `src/train.py` (new `"wave10s"` dataset kind,
+`CHUNK_SAMPLES_10S` in `src/data/dataset.py`; wired into `src/ensemble.py`
+and `src/infer_test.py` too so it can join the ensemble once trained).
+Smoke-tested locally (forward + embed pass, correct output shapes, 5.6M
+params) before launching. Also queued but not yet ported: their SE-ResNet
+(`SingerSENet`, 32→512 channels, 4-stage) and Non-local net
+(`NonLocalSingerNet`, classic Wang et al. theta/phi/g block + SE, same
+32→512 channel ramp) — both structurally different from our current
+`se_resnet`/`fgnl` (different papers/depth-width tradeoffs), lower priority
+than the CRNN gap since our `se_resnet`/`fgnl` already score competitively
+with theirs on our own val set.
+
+Launched: `python -m src.train --model crnn_nasrullah_faithful
+--data_index_dir data/index --out_dir results/crnn_nasrullah_faithful
+--optimizer adamw --label_smoothing 0.1 --lr 3e-4 --weight_decay 1e-4
+--epochs 300 --patience 40`, tmux window `crnn_nasrullah` in the
+`hw1_singer` session, GPU 0. Check `results/crnn_nasrullah_faithful/
+summary.json` / `train_crnn_nasrullah.log` for the outcome; fold into
+`MATERIALS.md`'s table and `src/ensemble.py`'s candidate pool once done.
+
+Also drafted a 5th deep-research round
+(`deep_research/round5_prior_year_gap_and_latest_literature/prompt.md`)
+covering the problem statement, our current pipeline/architectures/
+augmentation, this investigation's findings, and asking for a deep-dive
+recommendation plus latest ICASSP/InterSpeech/AAAI/NeurIPS singer-ID papers.
+
+
 ## 2026-08-30 — all 14 ablation-queue jobs finished; new graded submission
 
 Results (val, full table in MATERIALS.md): `sota_crnn_wide` (channel_mult=1.5

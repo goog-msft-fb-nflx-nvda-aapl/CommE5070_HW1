@@ -14,6 +14,7 @@ import torch.nn as nn
 from torch.utils.data import DataLoader
 
 from src.data.dataset import (
+    CHUNK_SAMPLES_10S,
     MelChunkEvalDataset,
     MelChunkTrainDataset,
     WaveformEvalDataset,
@@ -21,6 +22,7 @@ from src.data.dataset import (
 )
 from src.evaluate import evaluate_and_save, evaluate_metrics_only
 from src.models.confound_crnn import CRNN2D_elu2
+from src.models.crnn_nasrullah_faithful import CRNNNasrullahFaithful
 from src.models.crnn_zain import CRNN2D
 from src.models.nonlocal_fgnl import CRNN_FGNL
 from src.models.sota_cnn import CRNN as SotaCRNN
@@ -60,6 +62,9 @@ MODEL_REGISTRY = {
     # src/models/ssl_frontend.py's docstring / EXPERIMENT_LOG.md.
     "ssl_frontend": (_build_ssl_frontend, "wave"),
     "speaker_frontend": (_build_speaker_frontend, "wave"),
+    # faithful port of our prior-year submission's CRNN — see the model
+    # docstring for exactly what it isolates vs. sota_crnn/CRNN_Attn/crnn_zain
+    "crnn_nasrullah_faithful": (lambda n_class: CRNNNasrullahFaithful(n_class=n_class), "wave10s"),
 }
 
 
@@ -76,6 +81,9 @@ def build_datasets(model_kind, index_dir, remix_dir=None, augment=True):
         else:
             train_ds = MelChunkTrainDataset(train_path, augment=augment)
         return train_ds, MelChunkEvalDataset(val_path)
+    if model_kind == "wave10s":
+        return (WaveformTrainDataset(train_path, chunk_samples=CHUNK_SAMPLES_10S, augment=augment),
+                WaveformEvalDataset(val_path, chunk_samples=CHUNK_SAMPLES_10S))
     return WaveformTrainDataset(train_path, augment=augment), WaveformEvalDataset(val_path)
 
 

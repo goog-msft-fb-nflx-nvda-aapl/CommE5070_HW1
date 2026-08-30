@@ -130,8 +130,13 @@ architecture, all from the same starting point):
   (+0.4pp, within the "small positive" band Gemini's round-4 response
   predicted, nowhere near CLMR's 5.6pp reference point).
 - **Hurt**: attention pooling (-10.8pp vs. last-GRU-state — the opposite of
-  what the user's prior run's design choice would predict, a genuine,
-  measured negative result, not assumed), less capacity (-10.8pp), SupCon
+  what our own prior-year run's design choice would predict, a genuine,
+  measured negative result, not assumed **on the backbone actually tested**;
+  see "Prior-year submission, revisited" below — this ablation bolted
+  attention onto `sota_crnn`'s small 32-hidden-dim unidirectional GRU, not
+  the larger bidirectional-256 GRU the prior run actually used, so it
+  doesn't yet settle whether attention pooling itself is the culprit), less
+  capacity (-10.8pp), SupCon
   auxiliary loss (-2.6pp vs. the AdamW/LS-only version), DropBlock (-5.6pp
   vs. AdamW/LS-only), SWA weight-averaging (-3.5pp vs. its own run's
   best non-averaged checkpoint — averaging late-training weights made this
@@ -142,6 +147,38 @@ architecture, all from the same starting point):
   it as their shared base, so it's not directly comparable to isolate; the
   capacity-sweep variants (narrow/wide) used AdamW/LS too and still showed
   channel width as the dominant effect either way.
+
+**Prior-year submission, revisited (2026-08-30).** We re-checked our own
+prior-year submission for this same assignment
+(`github.com/goog-msft-fb-nflx-nvda-aapl/NTU`) after it looked like it might
+beat this project's ensemble. Two findings:
+1. **Not directly comparable.** That submission self-splits `train_val` by
+   taking each artist's alphabetically-last album as validation (946/234
+   tracks), not this project's official assignment-provided split (949/231)
+   — the two val accuracies are measured on different tracks. Under the
+   report's own guessed scoring formula (top1 + 0.5×top3), this project's
+   ensemble is *not* behind (0.853+0.5×0.905=**1.305** vs.
+   0.825+0.5×0.949=**1.2995**), but that comparison is still cross-split and
+   should be read as "not obviously worse," not "ahead."
+2. **A real, previously-unclosed gap.** The prior submission's actual CRNN
+   is architecturally larger and different from anything in this project's
+   ablation table: bidirectional GRU (hidden=256, 2 layers) vs. `sota_crnn`'s
+   unidirectional 32-hidden-dim GRU; attention pooling over the full
+   sequence; 4 Conv-BN-ELU blocks up to 256 channels vs. `sota_crnn`'s
+   96-mel/512-fft frontend; 10s training crops vs. our 5s; per-sample mel
+   normalization; `f_min=20`/`f_max=8000`/`top_db=80`. Our existing
+   `sota_crnn_attn` and `sota_crnn_norm` ablations tested those last two
+   ingredients individually, but bolted onto `sota_crnn`'s much smaller
+   backbone — so the "attention pooling hurt" result above is confounded by
+   backbone capacity, not necessarily a clean refutation. Ported the prior
+   submission's exact architecture as `crnn_nasrullah_faithful`
+   (`src/models/crnn_nasrullah_faithful.py`) and launched training
+   (`results/crnn_nasrullah_faithful/`) — update this section with the
+   result once it lands, and fold into `src/ensemble.py`'s candidate pool if
+   it's competitive. (Their 10-random-crop TTA method specifically is *not*
+   being re-adopted — already directly tested and shown weaker than this
+   project's default full-track averaging, see the ensemble/TTA section
+   above.)
 
 **`fgnl`**: two retries (lr=1e-4, then no-augment-at-all) both under-
 performed the original pass-2 run's 52.4%... except the no-augment retry

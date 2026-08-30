@@ -20,7 +20,7 @@ import numpy as np
 import torch
 
 from src.checkpoint_utils import load_checkpoint
-from src.data.dataset import MelChunkEvalDataset, WaveformEvalDataset
+from src.data.dataset import CHUNK_SAMPLES_10S, MelChunkEvalDataset, WaveformEvalDataset
 from src.evaluate import aggregate_predict, compute_metrics, plot_confusion_matrix
 from src.train import MODEL_REGISTRY
 
@@ -33,8 +33,12 @@ def get_probs(model_name, checkpoint, index_dir, split, device, n_class):
 
     path = f"{index_dir}/{split}.json"
     has_labels = split != "test"
-    ds = (MelChunkEvalDataset(path, has_labels=has_labels) if kind == "mel"
-          else WaveformEvalDataset(path, has_labels=has_labels))
+    if kind == "mel":
+        ds = MelChunkEvalDataset(path, has_labels=has_labels)
+    elif kind == "wave10s":
+        ds = WaveformEvalDataset(path, chunk_samples=CHUNK_SAMPLES_10S, has_labels=has_labels)
+    else:
+        ds = WaveformEvalDataset(path, has_labels=has_labels)
     keys, trues, probs = aggregate_predict(model, ds, device, n_class)
     return keys, trues, probs
 

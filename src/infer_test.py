@@ -14,7 +14,7 @@ import json
 import torch
 
 from src.checkpoint_utils import load_checkpoint
-from src.data.dataset import MelChunkEvalDataset, WaveformEvalDataset
+from src.data.dataset import CHUNK_SAMPLES_10S, MelChunkEvalDataset, WaveformEvalDataset
 from src.evaluate import aggregate_predict
 from src.train import MODEL_REGISTRY
 
@@ -42,6 +42,8 @@ def main():
     test_path = f"{args.data_index_dir}/test.json"
     if kind == "mel":
         test_ds = MelChunkEvalDataset(test_path, has_labels=False)
+    elif kind == "wave10s":
+        test_ds = WaveformEvalDataset(test_path, chunk_samples=CHUNK_SAMPLES_10S, has_labels=False)
     else:
         test_ds = WaveformEvalDataset(test_path, has_labels=False)
 
