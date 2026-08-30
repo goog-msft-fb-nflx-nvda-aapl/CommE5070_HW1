@@ -95,6 +95,9 @@ def main():
                           "for cross-song remix training (mel models only) — see src/data/remix_dataset.py")
     ap.add_argument("--optimizer", default="adam", choices=["adam", "adamw"])
     ap.add_argument("--label_smoothing", type=float, default=0.0)
+    ap.add_argument("--swa", action="store_true", help="stochastic weight averaging over the last swa_start_frac of training")
+    ap.add_argument("--swa_start_frac", type=float, default=0.75)
+    ap.add_argument("--swa_lr", type=float, default=5e-5)
     ap.add_argument("--device", default="cuda" if torch.cuda.is_available() else "cpu")
     args = ap.parse_args()
 
@@ -117,6 +120,14 @@ def main():
     scheduler = None if args.no_scheduler else torch.optim.lr_scheduler.CosineAnnealingLR(opt, T_max=args.epochs)
     criterion = nn.CrossEntropyLoss(label_smoothing=args.label_smoothing)
 
+    swa_model, swa_scheduler, swa_start_epoch = None, None, None
+    if args.swa:
+        from torch.optim.swa_utils import AveragedModel, SWALR
+
+        swa_model = AveragedModel(model)
+        swa_scheduler = SWALR(opt, swa_lr=args.swa_lr)
+        swa_start_epoch = int(args.epochs * args.swa_start_frac)
+
     best_top1 = -1.0
     best_epoch = -1
     history = []
@@ -137,7 +148,10 @@ def main():
             total_loss += loss.item()
             n_batches += 1
 
-        if scheduler is not None:
+        if swa_model is not None and epoch >= swa_start_epoch:
+            swa_model.update_parameters(model)
+            swa_scheduler.step()
+        elif scheduler is not None:
             scheduler.step()
 
         train_loss = total_loss / max(1, n_batches)
@@ -169,6 +183,17 @@ def main():
         json.dump({"model": args.model, "best_epoch": best_epoch, **final_metrics}, f, indent=2)
 
     print(f"done. best_epoch={best_epoch} best_top1={final_metrics['top1']:.4f}. checkpoint={ckpt_path}")
+
+    if swa_model is not None:
+        from torch.optim.swa_utils import update_bn
+
+        update_bn(train_loader, swa_model, device=args.device)
+        swa_path = os.path.join(args.out_dir, "swa.pt")
+        swa_metrics = evaluate_and_save(swa_model.module, val_ds, args.device, labels, args.out_dir, tag=f"{args.model}_swa")
+        torch.save({"model_state": swa_model.module.state_dict(), "metrics": swa_metrics}, swa_path)
+        with open(os.path.join(args.out_dir, "summary_swa.json"), "w") as f:
+            json.dump({"model": args.model, **swa_metrics}, f, indent=2)
+        print(f"SWA done. top1={swa_metrics['top1']:.4f} (vs non-SWA {final_metrics['top1']:.4f}). checkpoint={swa_path}")
 
 
 if __name__ == "__main__":
