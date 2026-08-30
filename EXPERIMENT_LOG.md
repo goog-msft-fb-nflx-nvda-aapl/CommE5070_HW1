@@ -1,5 +1,41 @@
 # Experiment log
 
+## 2026-08-30 — singer_senet ties best single model; nonlocal_singernet finished; 14-model ensemble launched
+
+`singer_senet` and `nonlocal_singernet` (faithful ports of the prior-year
+submission's channel-ramped SE-ResNet / classic non-local ResNet — see the
+entry below this one for what they're testing) finished:
+
+| model | val top1 | val top3 |
+|---|---|---|
+| `singer_senet` | **0.805** (186/231, exactly tying `sota_crnn_wide`) | 0.883 |
+| `nonlocal_singernet` | 0.775 | 0.874 |
+
+`singer_senet` is the first model in this project to match `sota_crnn_wide`
+on top1 while being architecturally unrelated (channel-ramped 32->512
+SE-ResNet, no recurrence at all, vs. `sota_crnn_wide`'s CRNN) — this is
+exactly the kind of result that should help ensemble diversity, per both
+round-5 responses' (correctly, this time) shared claim that architectural
+diversity matters more than raw individual accuracy. `nonlocal_singernet`
+underperforms both, similar to `crnn_nasrullah_faithful`'s pattern (another
+of the prior submission's individually-weaker-but-different architectures).
+
+Net read on the Gemini/Qwen disagreement this was meant to settle: **mixed,
+leaning Gemini** — porting the channel-ramped backbones was worth it for
+`singer_senet` specifically (ties best single model, adds real diversity),
+but not for `nonlocal_singernet` (classic non-local attention underperforms
+both `fgnl`'s more parameter-efficient generalized non-local block and the
+plain channel-ramped SE variant) — so Qwen's caution about non-local
+specifically holds, while Gemini's optimism about channel-ramped backbones
+generally holds for the SE variant. Neither engine's response distinguished
+between the two prior-year architectures this cleanly; worth noting in the
+report as a case where the literature-review layer couldn't have predicted
+which specific variant would work without the training run.
+
+Re-ran the ensemble grid search over all 14 trained models (`results/
+ensemble4/`, 3^14 ≈ 4.78M weight combinations) — results pending.
+
+
 ## 2026-08-30 — DAMFF checked and not pursued (another mismatched round-5 citation)
 
 While the two prior-year-architecture ports (`singer_senet`,

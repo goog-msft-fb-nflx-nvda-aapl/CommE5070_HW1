@@ -259,6 +259,24 @@ directly comparable (different val split) still stands, but we no longer
 have any measured evidence that the architecture itself is the reason for
 the apparent gap.
 
+**Settling the channel-ramped SE-ResNet/non-local ResNet disagreement.**
+Ported both faithfully (`singer_senet`, `nonlocal_singernet` —
+`src/models/singer_senet.py`/`nonlocal_singernet.py`) rather than picking a
+side on Gemini's or Qwen's unsourced claim. Result: **mixed, leaning
+Gemini**. `singer_senet` (channel-ramped 32->512 SE-ResNet, no recurrence)
+ties `sota_crnn_wide` exactly on top1 (0.805, 186/231) at 0.883 top3 — the
+first architecture in this project to match the best single model's top1
+while being structurally unrelated to it, which is exactly the kind of
+result both responses said should help ensemble diversity.
+`nonlocal_singernet` (classic Wang et al. non-local block) scores lower,
+0.775/0.874 — underperforming both this project's own `fgnl` (the more
+parameter-efficient, singer-ID-specific FGNL formulation) and the
+channel-ramped SE variant, supporting Qwen's specific skepticism about the
+classic non-local block, just not its blanket skepticism of channel-ramped
+backbones generally. Neither engine's response distinguished between these
+two prior-year architectures this cleanly — a case where the two engines'
+literature-level reasoning couldn't substitute for actually running it.
+
 **`fgnl`**: two retries (lr=1e-4, then no-augment-at-all) both under-
 performed the original pass-2 run's 52.4%... except the no-augment retry
 actually recovered to 0.710 — *matching* crnn_zain and beating the
