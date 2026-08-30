@@ -1,5 +1,53 @@
 # Experiment log
 
+## 2026-08-30 — Task 2 undertraining fix + remix ablation + graded model swap
+
+User flagged the Task2 formula score (top1 + 0.5*top3, then 0.671+0.5*0.823=
+1.083) as "extremely low" and asked to (1) review correctness, (2) draft a
+survey prompt for further improvement, (3) confirm the allowed training data.
+
+- (3) `train.json` only — `val.json` is validation-only, test folder
+  off-limits, no outside data (both source docs agree).
+- (1) All 4 from-scratch models' first training pass hit their 80-epoch cap
+  without ever early-stopping (patience=15), val accuracy still swinging
+  ±8-10pp epoch to epoch — undertraining, not an architecture ceiling. Also:
+  zero data augmentation despite the assignment doc asking for it. Added
+  SpecAugment (mel models) / gain-jitter+noise (waveform model) to
+  `src/data/dataset.py`, a cosine LR schedule + weight decay to
+  `src/train.py`, raised epochs to 300/patience 40, backed up the old
+  checkpoints as `results/*_v1_undertrained/`, retrained all 4 in parallel.
+  Results: sota_crnn 58.4%→76.2% (+17.8pp), crnn_zain 61.9%→71.0% (+9.1pp),
+  confound_crnn 67.1%→69.3% (+2.2pp), fgnl 57.1%→52.4% (**regressed**).
+- Also implemented cross-song vocal/instrumental remix augmentation
+  (`src/data/remix_dataset.py`, `src/data/separate_accompaniment.py`) — the
+  top from-scratch-compatible lever per a targeted third Deep Research round
+  (`deep_research_prompt_3.md`), since it's literally the technique from
+  Hsieh et al.'s own paper (the architecture `confound_crnn` ports). Effect
+  in our setup was much smaller than the literature's (+1.3pp top3, flat
+  top1) — see MATERIALS.md for the honest writeup of why, not tuned to force
+  a bigger number.
+- fgnl's regression traced to a plausible cause: the original FGNL paper
+  (per Perplexity's sourced claim, not corroborated but also not
+  contradicted) used a constant LR of 1e-4; we'd applied 1e-3 uniformly to
+  every model. Retry at lr=1e-4 launched (`train_fgnl_lr4.log`), in progress
+  as of this entry.
+- **Graded submission swapped**: `sota_crnn` (76.2%/90.0%) is now the best
+  from-scratch model, clearly ahead of `confound_crnn` (69.3%/82.7%) — the
+  Artist20 paper's own architecture didn't win. Regenerated
+  `results/R13921031.json`, t-SNE, and confusion matrix from `sota_crnn`;
+  `readme` and `MATERIALS.md` updated throughout.
+- Minor false alarm during this work: `confound_crnn` and `confound_crnn_remix`
+  landed on the *exact* same val top1 (0.6926, both at best_epoch=241) despite
+  visibly different training logs throughout (different loss trajectories,
+  different per-epoch top3, different per-epoch timing) — initially worried
+  this was another queued-tmux-input-style bug, but confirmed both runs are
+  genuinely independent (checked raw per-epoch log lines, confirmed differing
+  top3 and loss at the "tied" epoch) — the tie is a real coincidence: cosine
+  annealing naturally pushes both runs' best checkpoint toward the
+  low-LR/late-epoch region, and with only 231 val tracks (232 possible top1
+  values) two similarly-converged models landing on the same value isn't
+  actually that improbable. No data-integrity issue this time.
+
 ## 2026-08-30 — TA clarifications (TA_discussion.md) changed the graded submission
 
 User pointed to `TA_discussion.md` (Q&A thread from the course TA). Two
