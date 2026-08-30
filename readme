@@ -17,36 +17,51 @@ provided: `train.json`, `val.json`, `train_val/<artist>/<album>/*.mp3`,
 
     python -m src.data.prepare_index --data_root /path/to/artist20 --out_dir data/index
 
-Running inference (the graded model)
--------------------------------------
+Running inference (the graded submission)
+-------------------------------------------
 Per the TA's clarification on NTU Cool (see `TA_discussion.md` #4 — Task 2
 requires training your own encoder *and* classifier from scratch; a
 pretrained encoder, frozen or fine-tuned, is only valid as a baseline
-comparison, not the graded submission), the graded Task-2 model is
-`sota_crnn` — a CRNN ported from minzwon/sota-music-tagging-models
-(Choi et al. 2017-style), trained fully from scratch on this dataset with
-SpecAugment/waveform augmentation and a cosine LR schedule (see
-`EXPERIMENT_LOG.md` for why — the first training pass across all
-from-scratch models was undertrained). Val: **76.2% top1 / 90.0% top3**, the
-best from-scratch result in this project. Its checkpoint at
-`results/sota_crnn/best.pt` reproduces the submitted `R13921031.json`:
+comparison, not the graded submission), the graded Task-2 submission is a
+**weighted-average ensemble of 5 from-scratch models**: `sota_crnn`×2 +
+`sota_crnn_wide`×1 + `short_chunk_cnn`×1 + `sota_crnn_norm`×1 (weights
+grid-searched on val, see `results/ensemble2/ensemble_result.json`). Val:
+**85.3% top1 / 90.5% top3**, the best result among from-scratch-eligible
+options in this project (individually, the strongest single model is
+`sota_crnn_wide` at 80.5%/92.2% — a capacity-scaled variant of `sota_crnn`).
+Reproduce the submitted `R13921031.json`:
 
-    python -m src.infer_test --model sota_crnn \
-        --checkpoint results/sota_crnn/best.pt \
-        --data_index_dir data/index \
-        --out_path R13921031.json
+    python -m src.ensemble --data_index_dir data/index \
+        --models confound_crnn:results/confound_crnn/best.pt \
+                 crnn_zain:results/crnn_zain/best.pt \
+                 sota_crnn:results/sota_crnn/best.pt \
+                 sota_crnn_wide:results/sota_crnn_wide/best.pt \
+                 short_chunk_cnn:results/short_chunk_cnn/best.pt \
+                 se_resnet:results/se_resnet/best.pt \
+                 fgnl:results/fgnl/best.pt \
+                 sample_cnn:results/sample_cnn/best.pt \
+                 sota_crnn_norm:results/sota_crnn_norm/best.pt \
+        --out_dir results/ensemble2 --max_weight 2 \
+        --test_out_path R13921031.json
 
-No pretrained weights are downloaded for this model — every parameter was
-trained on Artist20's train split. Output is
+(`--models` includes 4 more candidates the grid search is free to weight to
+0 — it found the 5-model combination above on its own.) No pretrained
+weights are downloaded for any component — every parameter in every model
+was trained on Artist20's train split. Output is
 `{"001": [top1, top2, top3], ...}` for all 233 test tracks, top-3 in
 descending confidence order, matching the assignment's schema.
 
-Other from-scratch models (`confound_crnn`, `crnn_zain`, `fgnl`,
-`confound_crnn_vocals` — a vocal-separation ablation, `confound_crnn_remix` —
-a cross-song vocal/instrumental remix ablation) can be run the same way by
-swapping `--model` and `--checkpoint`; see `MATERIALS.md` for the full
-results table and why `sota_crnn` — not `confound_crnn`, the Artist20
-paper's own architecture — ended up winning among from-scratch models.
+For a single-model (simpler, no ensemble) reproduction, use `sota_crnn_wide`
+alone the same way as any other model below.
+
+Other from-scratch models (`sota_crnn`, `sota_crnn_wide`, `confound_crnn`,
+`crnn_zain`, `fgnl`, `short_chunk_cnn`, `sample_cnn`, `se_resnet`,
+`sota_crnn_norm`/`_attn`/`_narrow`/`_dropblock`/`_supcon`/`_swa`/
+`_ssl_finetune`, `confound_crnn_vocals`/`_remix` — ablations) can be run the
+same way by swapping `--model`/`--checkpoint`; see `MATERIALS.md` for the
+full results table and ablation-by-ablation writeup (12 variants of the
+winning architecture — capacity, pooling, normalization, optimizer,
+regularization, and SSL-pretraining ablations, each measured not assumed).
 
 **Baselines using pretrained encoders** (`ssl_frontend` = frozen MERT + a
 trained head, `speaker_frontend` = frozen ECAPA-TDNN speaker embedding + a

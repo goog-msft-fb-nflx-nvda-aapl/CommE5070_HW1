@@ -1,0 +1,39 @@
+{
+  "models": [
+    "confound_crnn",
+    "crnn_zain",
+    "sota_crnn",
+    "sota_crnn_wide",
+    "short_chunk_cnn",
+    "se_resnet",
+    "fgnl",
+    "sample_cnn",
+    "sota_crnn_norm"
+  ],
+  "weights": [
+    0,
+    0,
+    2,
+    1,
+    1,
+    0,
+    0,
+    0,
+    1
+  ],
+  "val_metrics": {
+    "top1": 0.8528138528138528,
+    "top3": 0.9047619047619048
+  },
+  "individual_val_top1": {
+    "confound_crnn": 0.6926406926406926,
+    "crnn_zain": 0.70995670995671,
+    "sota_crnn": 0.7619047619047619,
+    "sota_crnn_wide": 0.8051948051948052,
+    "short_chunk_cnn": 0.7662337662337663,
+    "se_resnet": 0.7575757575757576,
+    "fgnl": 0.70995670995671,
+    "sample_cnn": 0.6926406926406926,
+    "sota_crnn_norm": 0.7662337662337663
+  }
+}

@@ -15,8 +15,9 @@ document's framing:**
   the graded submission" (TA_discussion.md #4). This means `ssl_frontend`
   (MERT) and `speaker_frontend` (ECAPA-TDNN) — despite `speaker_frontend`
   scoring far higher than anything else in this project — are **baselines**,
-  not eligible as the Task-2 submission. The graded/submitted model is
-  `sota_crnn` (from scratch, best-performing after a retrain — see below).
+  not eligible as the Task-2 submission. The graded/submitted result is a
+  **weighted ensemble of from-scratch models** (85.3% val top1 — see
+  Task 2 below), all individually eligible under this rule.
   See `readme`'s "Running inference" section.
 
 **Retrain note (2026-08-30)**: the from-scratch scores below went through two
@@ -60,34 +61,93 @@ round specifically on improving these from-scratch numbers
 
 ## Task 2 — deep learning
 All models: chunked 5s inputs, song-level prediction via mean-pooled softmax
-across a track's non-overlapping chunks. Final val-set results:
+across a track's non-overlapping chunks. Val-set results across every
+architecture/ablation trained (pass-2 pipeline: SpecAugment/waveform
+augmentation, cosine LR schedule, 300-epoch cap / 40-epoch patience unless
+noted):
 
-| model | eligibility | method | val top1 | val top3 |
+| model | eligibility | basis / ablation | val top1 | val top3 |
 |---|---|---|---|---|
-| **sota_crnn** | **graded submission** | Method 1 (CRNN, minzwon, from scratch) | **0.762** | **0.900** |
-| crnn_zain | from-scratch | Method 2-1 (Zain CRNN2D, from scratch) | 0.710 | 0.848 |
-| confound_crnn_remix | from-scratch ablation | Method 2-2 remix ablation (CRNN2D_elu2, cross-song vocal/instrumental remix, from scratch) | 0.693 | 0.840 |
-| confound_crnn | from-scratch | Task-2 core / Method 2-2 (CRNN2D_elu2, raw mixture, from scratch) | 0.693 | 0.827 |
-| fgnl | from-scratch | Method 2-3 (non-local net, from scratch) | 0.524 (retry at lr=1e-4 in progress — see note) | 0.714 |
+| **sota_crnn_wide** | **graded submission** | Method 1 CRNN, channel_mult=1.5 capacity sweep | **0.805** | **0.922** |
+| sota_crnn_swa (best non-averaged ckpt) | from-scratch | Method 1 CRNN + AdamW + label-smoothing + SWA run (the SWA average itself was worse — see below) | 0.784 | 0.861 |
+| short_chunk_cnn | from-scratch | ShortChunkCNN_Res (minzwon, lecture02-spotlighted) | 0.766 | 0.866 |
+| sota_crnn_norm | from-scratch ablation | Method 1 CRNN + per-sample mel normalization | 0.766 | 0.879 |
+| sota_crnn_ssl_finetune | from-scratch | Method 1 CRNN, SimCLR/NT-Xent-pretrained then fine-tuned | 0.766 | 0.853 |
+| sota_crnn (original) | from-scratch | Method 1 CRNN, plain Adam | 0.762 | 0.900 |
+| se_resnet | from-scratch | SEResNet (new arch, SE gating, per user's prior-run design) | 0.758 | 0.866 |
+| sota_crnn_adamw_ls | from-scratch ablation | Method 1 CRNN + AdamW + label smoothing 0.1 | 0.753 | 0.892 |
+| sota_crnn_supcon | from-scratch ablation | Method 1 CRNN + AdamW/LS + SupCon auxiliary loss | 0.736 | 0.853 |
+| sota_crnn_dropblock | from-scratch ablation | Method 1 CRNN + AdamW/LS + DropBlock | 0.697 | 0.866 |
+| crnn_zain | from-scratch | Method 2-1 (Zain CRNN2D) | 0.710 | 0.848 |
+| fgnl (no-augment retry) | from-scratch | Method 2-3 non-local net, augmentation disabled | 0.710 | 0.870 |
+| confound_crnn_remix | from-scratch ablation | Method 2-2 remix ablation (CRNN2D_elu2, cross-song remix) | 0.693 | 0.840 |
+| confound_crnn | from-scratch | Task-2 core / Method 2-2 (CRNN2D_elu2, raw mixture) | 0.693 | 0.827 |
+| sample_cnn | from-scratch | SampleCNN (minzwon, raw-waveform end-to-end) | 0.693 | 0.823 |
+| sota_crnn_narrow | from-scratch ablation | Method 1 CRNN, channel_mult=0.5 capacity sweep | 0.654 | 0.835 |
+| sota_crnn_attn | from-scratch ablation | Method 1 CRNN + attention pooling (vs. last-GRU-state) | 0.654 | 0.810 |
+| sota_crnn_swa (SWA-averaged) | from-scratch ablation | same run as above, weights actually averaged | 0.749 | 0.866 |
 | speaker_frontend | baseline (pretrained encoder) | Method 3 (ECAPA-TDNN + probe) | 0.952 | 0.987 |
 | ssl_frontend | baseline (pretrained encoder) | Method 2-4 / Baseline 1 (MERT + probe) | 0.684 | — |
 
-(`confound_crnn_vocals`, the raw-vs-vocals-only ablation from the first
-training pass, wasn't rerun with the fixes below — its pass-1 numbers
-[0.671/0.857] are in `results/confound_crnn_vocals_v1_undertrained/` for the
-record but no longer directly comparable to the pass-2 row above.)
+(`confound_crnn_vocals` and `fgnl`'s earlier lr=1e-4 retry are from the
+undertrained pass-1 pipeline / a since-superseded hypothesis respectively —
+kept in `results/*_v1_undertrained/`, `results/fgnl_v3_lr1e4_worse/` for the
+record, not in the table above.)
 
-**Best from-scratch model (the graded Task-2 submission): `sota_crnn`**
-(minzwon/sota-music-tagging-models' CRNN, trained fully from scratch — no
-pretrained weights anywhere in the model). Per TA_discussion.md #4, this is
-the model that actually counts as the Task-2 deliverable. Notably, this
-*isn't* the Artist20 paper's own architecture (`confound_crnn`) — see
-"Undertraining root-cause" below for how the first pass masked this.
+**Ensemble (the actual graded submission): weighted average of 9 from-
+scratch models** (`src/ensemble.py`, `results/ensemble2/ensemble_result.json`)
+— grid-searched integer weights 0-2 over confound_crnn, crnn_zain, sota_crnn,
+sota_crnn_wide, short_chunk_cnn, se_resnet, fgnl, sample_cnn,
+sota_crnn_norm. Best: sota_crnn×2 + sota_crnn_wide×1 + short_chunk_cnn×1 +
+sota_crnn_norm×1 → **val top1=0.853, top3=0.905** — +4.8pp over
+`sota_crnn_wide` alone, the largest single lever in the whole from-scratch
+comparison, and directly validated twice now (this project's first, smaller
+ensemble at +3.0pp; the user's own prior run at +11pp). Directly regenerates
+`results/R13921031.json`. Caveat stated plainly, not hidden: a 9-model,
+0-2 integer-weight grid search (3^9 ≈ 19683 combinations) against only 231
+val tracks carries real overfit-to-val risk in the *weight selection*
+specifically — the individual models' own numbers are the more robust
+per-architecture comparison; the ensemble weights should be read as "a
+reasonable combination that measurably helps," not as a precisely-tuned
+optimum.
 
-**`fgnl` regressed and is being retried**: the non-local network was the one
-model that got *worse* under the retrain (57.1%→52.4%), stopping very early
-(patience fired at epoch 105). A Deep Research follow-up specifically on
-improving these numbers (`deep_research_response_3_perplexity.md`) cites the
+**Best single from-scratch model: `sota_crnn_wide`**
+— the winning architecture (Method 1 CRNN) scaled to 1.5x channel width via
+the capacity sweep (`channel_mult` in `sota_cnn.py`'s `CRNN`), from scratch,
+no pretrained weights. This is the one item on the ablation queue that
+Qwen's round-3 response got backwards without a citation (it argued smaller
+models would generalize better on ~950 tracks) — tested directly rather than
+trusted or dismissed, and the opposite direction won: **wider, not narrower**
+(narrow: 0.654, original 1x: 0.762, wide 1.5x: 0.805). Per TA_discussion.md
+#4, this is the model that actually counts as the Task-2 deliverable —
+*not* the Artist20 paper's own architecture (`confound_crnn`), and not
+`sota_crnn` at its original width either.
+
+**Ablation takeaways** (12 variants of/around the winning `sota_crnn`
+architecture, all from the same starting point):
+- **Helped**: more capacity (wide, +4.3pp), per-sample mel normalization
+  (+0.4pp), plain AdamW+label-smoothing (mixed — see below), SSL pretraining
+  (+0.4pp, within the "small positive" band Gemini's round-4 response
+  predicted, nowhere near CLMR's 5.6pp reference point).
+- **Hurt**: attention pooling (-10.8pp vs. last-GRU-state — the opposite of
+  what the user's prior run's design choice would predict, a genuine,
+  measured negative result, not assumed), less capacity (-10.8pp), SupCon
+  auxiliary loss (-2.6pp vs. the AdamW/LS-only version), DropBlock (-5.6pp
+  vs. AdamW/LS-only), SWA weight-averaging (-3.5pp vs. its own run's
+  best non-averaged checkpoint — averaging late-training weights made this
+  particular model *worse*, not more robust).
+- **Mixed**: AdamW+label-smoothing alone (0.753) actually landed *below*
+  plain Adam (0.762) on this specific architecture at this width — but
+  every AdamW/LS-based ablation on top of it (norm, dropblock, supcon) used
+  it as their shared base, so it's not directly comparable to isolate; the
+  capacity-sweep variants (narrow/wide) used AdamW/LS too and still showed
+  channel width as the dominant effect either way.
+
+**`fgnl`**: two retries (lr=1e-4, then no-augment-at-all) both under-
+performed the original pass-2 run's 52.4%... except the no-augment retry
+actually recovered to 0.710 — *matching* crnn_zain and beating the
+original augmented fgnl run. So augmentation specifically (not the LR) was
+what hurt this architecture — confirms the hypothesis from the earlier
 FGNL paper's actual published recipe as a constant LR of 1e-4, not the 1e-3
 we used for every model uniformly — a 10x mismatch that plausibly explains
 instability in a non-local-attention architecture more LR-sensitive than a

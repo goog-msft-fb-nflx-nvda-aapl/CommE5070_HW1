@@ -1,0 +1,6 @@
+{
+  "model": "sota_crnn_dropblock",
+  "best_epoch": 200,
+  "top1": 0.696969696969697,
+  "top3": 0.8658008658008658
+}
