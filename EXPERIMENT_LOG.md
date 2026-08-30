@@ -1,5 +1,91 @@
 # Experiment log
 
+## 2026-08-31 — round-6 responses read; statistical-significance analysis implemented and run
+
+Four responses landed for round 6 (ChatGPT, Gemini, Perplexity, Qwen —
+`deep_research/round6_error_analysis_and_report_depth/response_*.md`).
+
+**Part 1 (error-analysis methodology) — strong 4-way convergence**: all four
+independently recommend (a) a layered confusion-pair audit (vocal register/
+timbre vs. musical/genre context vs. production, cross-checked against
+mixture/vocal-only/accompaniment-only inference — directly reusing Hsieh et
+al.'s own vocal-separation methodology, which all four correctly identify as
+this dataset's actual precedent, not a generic error-analysis template);
+(b) pair-conditional (not just global) permutation importance for Task 1,
+comparing feature-family discriminability specifically between confused
+artist pairs; (c) **paired bootstrap CIs + McNemar's exact test** for
+comparing models on our 231-track val set, all four flagging that a single
+track is worth ~0.43pp and that our recent ensemble deltas (0.4-0.5pp) are
+right at that noise floor. This is exactly the kind of unanimous, well-
+grounded, cheaply-actionable recommendation worth implementing immediately
+rather than just logging — see below.
+
+**Part 3 (further report analyses) — also strong convergence**: calibration
+(ECE, Brier score, reliability diagrams — especially relevant given the Sia
+demo's flat-vs-confident-but-wrong contrast between models), per-album error
+clustering as a residual-confound diagnostic (does accuracy collapse on
+specific albums even after the album-level split?), embedding geometry
+beyond t-SNE (intra- vs. inter-artist cosine distance, silhouette score),
+and restructuring the ~19-model results into a tiered
+main-table/appendix presentation rather than one flat wall of numbers.
+
+**Implemented and run**: `src/analysis_significance.py` — paired bootstrap
+(5000 resamples) + McNemar's exact test, reusing `src/ensemble.py`'s
+`get_probs()` to reconstruct each system's val predictions from existing
+checkpoints (no retraining). Results
+(`results/analysis/significance.json`):
+
+- **`sota_crnn_wide` vs. the 14-model ensemble: -5.6pp, bootstrap 95% CI
+  [-9.5, -1.7]pp, McNemar p=0.011 — statistically significant.** The
+  headline "ensembling helps" claim holds up under a real test, not just a
+  point estimate.
+- **`sota_crnn_wide` vs. `singer_senet`: 0 pp difference in accuracy, but
+  20 tracks each got right that the other got wrong (McNemar p=1.0, of
+  course not significant on its own)** — direct, measured confirmation that
+  these two architecturally-unrelated models with identical accuracy are
+  making genuinely different errors, which is exactly the mechanism the
+  ensemble is supposed to exploit. A nice concrete number for the report's
+  ensemble-diversity argument, not just Cohen's kappa.
+- **9-model -> 12-model ensemble (+0.4pp), 12-model -> 14-model (+0.4pp),
+  9-model -> 14-model (+0.9pp): none of the three individually reach
+  significance** (all McNemar p=1.0/0.81, all bootstrap CIs straddle zero).
+  This is the honest finding all four responses predicted: the *overall*
+  ensemble-vs-single-model gain is real and significant, but this project's
+  specific trajectory of chasing each new architecture into the ensemble
+  pool, one at a time, produces improvements this val set genuinely cannot
+  distinguish from noise. Report this plainly rather than presenting
+  0.853->0.857->0.861 as three confirmed wins — it's one confirmed structural
+  effect (ensembling > single model) observed through a noisy incremental
+  path, not three separate validated results.
+
+**Not implemented this pass** (all four responses' other recommendations,
+noted rather than silently dropped — higher effort, would need new
+inference passes or new metadata joins, not just re-scoring existing
+predictions): calibration/ECE/Brier analysis, per-album error-clustering
+(would need album metadata joined to the val index, not currently exposed),
+embedding-geometry metrics beyond t-SNE, and pair-conditional Task-1 feature
+importance. Flagged as the natural next batch if more time is available.
+
+**Part 2 (Sia "Unstoppable" musicological interpretation) — see
+MATERIALS.md's "Visualizations" section for the full writeup**, including a
+citation-quality catch: our own round-6 prompt asserted "Unstoppable" was
+from the *Fifty Shades of Grey* soundtrack; ChatGPT caught and corrected
+this (it's from *This Is Acting*, 2016), Perplexity's independent sourcing
+(Wikipedia) implicitly agreed (called it "electropop," not "pop-soul"), but
+Qwen and Gemini both repeated the soundtrack claim uncritically rather than
+verifying it — a reminder that an error stated confidently *in our own
+prompt* gets parroted back by some engines and caught by others, so prompt
+framing itself needs the same skepticism as the responses. Separately,
+Gemini's specific vocal-comparison claims (e.g. "identical mezzo-soprano
+classification" between Sia and Tori Amos) trace to a fan blog
+("divadevotee.com") and a headphone-review site's user reviews page
+(head-fi.org) presented with the same confidence as ChatGPT's citation of an
+actual peer-reviewed acoustic study of Freddie Mercury's voice (Taylor &
+Francis, *Logopedics Phoniatrics Vocology*) — real links, but low-quality
+sources dressed up as "documented" — discounted accordingly, not treated as
+equally authoritative just because both come with footnotes.
+
+
 ## 2026-08-30 — own-voice demo re-run on the current best single model
 
 User confirmed the own-voice input: `unstoppable_sia.m4a` (a Voice Memos

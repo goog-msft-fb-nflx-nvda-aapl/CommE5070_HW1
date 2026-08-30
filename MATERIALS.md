@@ -670,6 +670,79 @@ contrastive/metric-learning auxiliary losses; confidence-filtered majority
 voting for song-level aggregation (FGNL's own paper's approach, distinct
 from our mean-pooled-softmax aggregation).
 
+## Statistical rigor and error-analysis methodology (round 6)
+
+Relayed `deep_research/round6_error_analysis_and_report_depth/prompt.md` to
+four engines (ChatGPT, Gemini, Perplexity, Qwen) — all four independently
+converged on the same top-priority recommendation: **our reported ensemble
+improvements (0.853 -> 0.857 -> 0.861 val top1 across three ensemble
+versions this session) are the size of 1-2 tracks out of 231 (each track is
+worth ~0.43pp), and need a significance test before being described as
+confirmed wins.** All four specifically recommended paired bootstrap
+confidence intervals (because every model/ensemble is scored on the same
+231 tracks) and McNemar's exact test for top-1 comparisons.
+
+**Implemented and run** (`src/analysis_significance.py`, reusing
+`src/ensemble.py`'s existing checkpoint-loading — no retraining, just
+re-scoring already-trained models): 5000-resample paired bootstrap +
+McNemar's exact test over five comparisons
+(`results/analysis/significance.json`):
+
+| comparison | Δ (a − b) | bootstrap 95% CI | McNemar p | significant? |
+|---|---|---|---|---|
+| `sota_crnn_wide` vs. 14-model ensemble | −5.6pp | [−9.5, −1.7]pp | 0.011 | **yes** |
+| `sota_crnn_wide` vs. `singer_senet` | 0.0pp | [−5.2, +5.6]pp | 1.0 | no |
+| 9-model ensemble vs. 12-model ensemble | −0.4pp | [−2.2, +1.3]pp | 1.0 | no |
+| 12-model ensemble vs. 14-model ensemble | −0.4pp | [−4.3, +3.9]pp | 1.0 | no |
+| 9-model ensemble vs. 14-model ensemble | −0.9pp | [−4.3, +2.6]pp | 0.81 | no |
+
+**Reading this honestly, not selectively**: the headline claim this project
+should actually stand behind is **"ensembling significantly beats the best
+single from-scratch model"** (p=0.011) — that one holds up. The
+*trajectory* of incremental ensemble improvements as we added each new
+architecture (round-5's ablations, then `singer_senet`/`nonlocal_singernet`)
+does **not** individually clear significance at any step — exactly the
+failure mode all four research responses warned about. The right framing
+for the report is "we observed a structural effect (ensembling beats single
+models, confirmed) via a noisy incremental search path (each individual
+step's gain is within this val set's noise floor)," not "each new
+architecture measurably improved the ensemble."
+
+One result is worth foregrounding for the ensemble-diversity argument
+specifically: **`sota_crnn_wide` and `singer_senet` have identical val
+accuracy (0.805) but disagree on 40 of 231 tracks (20 each direction)** —
+direct, measured confirmation that two architecturally-unrelated models
+tied on aggregate accuracy are making substantially different individual
+errors, which is the actual mechanism an ensemble exploits. This is a more
+concrete number for the report than the existing Cohen's-kappa/disagreement-
+rate metrics alone (`results/analysis/ensemble_diversity.json`, computed
+earlier over a different, smaller model subset).
+
+**Not implemented this pass** (all four responses agreed these matter, but
+each needs either new inference passes or new metadata this project doesn't
+currently expose, not just re-scoring existing predictions — noted rather
+than silently dropped):
+- **Calibration** (reliability diagrams, Expected Calibration Error, Brier
+  score) — flagged by all four as especially relevant given the Sia demo's
+  flat-vs-confident-but-wrong contrast between models.
+- **Per-album error clustering** — checking whether errors still concentrate
+  on specific held-out albums even after the album-level split, as a
+  residual-confound diagnostic. Would need album identifiers joined into
+  the val index, which isn't currently exposed by `src/data/prepare_index.py`.
+- **Embedding geometry beyond t-SNE** (intra- vs. inter-artist cosine
+  distance, silhouette score) — all four independently warned that a t-SNE
+  plot alone isn't a rigorous representation-quality metric.
+- **Pair-conditional Task-1 feature importance** — global permutation
+  importance answers "what matters overall," not "what separates artist A
+  from artist B specifically"; all four gave a similar recipe (restrict to
+  the confused pair, permute one feature group at a time, report the
+  accuracy/AUC drop).
+- **Confusion-pair audits cross-checked against vocal-only/accompaniment-
+  only inference** — directly reusing this project's own `confound_crnn_vocals`
+  demucs pipeline, which all four correctly identified as this dataset's
+  actual precedent (Hsieh et al.'s own methodology), not a generic
+  error-analysis template.
+
 ## Bonus — Baseline 2, zero-shot audio-LLM
 Qwen2-Audio-7B-Instruct, prompted with a 15s clip + the closed list of 20
 artist names, asked to rank its top-3 guesses (no training/fine-tuning).
@@ -750,6 +823,84 @@ per track for inspection).
     later models are learning more genuinely discriminative,
     less-overfit-to-training-idiosyncrasies representations, not just
     memorizing harder.
+
+### Musicological interpretation of the Sia predictions (round 6)
+
+Relayed `deep_research/round6_error_analysis_and_report_depth/prompt.md` to
+four engines (ChatGPT, Gemini, Perplexity, Qwen) asking specifically why our
+models' out-of-distribution guesses landed on the artists they did. Two
+housekeeping corrections first, since our own prompt got a fact wrong and
+the four engines split on catching it: **"Unstoppable" is from Sia's 2016
+album *This Is Acting*, not the *Fifty Shades of Grey* soundtrack** (that's
+"Salted Wound"/"Helium") — ChatGPT caught and sourced this correction;
+Perplexity's independently-sourced genre label ("electropop," from
+Wikipedia) implicitly agreed by not repeating the soundtrack claim; Qwen and
+Gemini both repeated our prompt's incorrect framing uncritically. Genre is
+best described as **electropop / anthemic pop** (Wikipedia, AllMusic), not
+"pop-soul" — the "pop-soul" label traced, on inspection, to a Gemini
+citation that was actually a headphone-review site's user-review page, not
+a music-genre source.
+
+**Sia's vocal characteristics on this track** (reasonably well-corroborated
+across ChatGPT and Perplexity, both citing an NPR profile): a distinctive
+raspy/grainy timbre, strong dynamic contrast between a restrained, lower,
+sometimes processed verse and a forceful, exerted, belted chorus, and
+expressive vibrato. **Explicitly not included**: precise note-range numbers
+(e.g. "D3 to A5") — ChatGPT and Perplexity both explicitly say the available
+range estimates are low-quality and disagree with each other, and
+specifically warn against stating a precise range without measuring the
+recording directly. Qwen and Gemini both did state specific confident
+ranges anyway; Qwen's aren't sourced at all, and Gemini's trace to a
+marketing blog ("Superprof") and a fan blog ("Diva Devotee") — neither
+meets the bar the other two engines set for themselves, so the specific
+numbers are excluded from the report-ready version below.
+
+**Per-predicted-artist assessment** (synthesized across all four responses;
+"strength" reflects how well-sourced the comparison is, not how confident
+any one engine sounded):
+
+| Predicted artist | Assessment | Strength |
+|---|---|---|
+| Madonna | **Consensus across all 4 engines**: production/genre artifact (anthemic, compressed, processed pop vocal chain), not a vocal-timbre match — the one point of full agreement. | Well-supported (as a *negative* / production-driven result) |
+| Fleetwood Mac (Stevie Nicks) | **Disputed between engines.** ChatGPT and Perplexity call it the most plausible vocal-texture match (Stevie Nicks's documented rasp and emotional delivery, via a Guardian piece, overlaps with Sia's documented rasp) — with the caveat that "Fleetwood Mac" the label covers multiple lead vocalists, not just Nicks. Qwen calls the same pairing "almost certainly a production/genre artifact," citing very different timbre. Gemini asserts a "direct match" sourced to a fan blog. Recorded as unresolved, not picking a side. | Mixed / contested |
+| Roxette (Marie Fredriksson) | Plausible vocal-level match — a Guardian obituary (via ChatGPT) documents Fredriksson's ~3-octave range, mezzo-soprano technique, and emotionally forceful, powerful, slightly raspy delivery, independently overlapping several of Sia's documented traits. No source directly states "Sia sounds like Fredriksson," but the overlap in independently-documented properties is the strongest indirect case among the female comparisons. | Plausible, indirectly supported |
+| Queen (Freddie Mercury) | Not a register match — a real peer-reviewed acoustic study (Löfqvist-style analysis in *Logopedics Phoniatrics Vocology*, via ChatGPT) documents Mercury's voice as baritone-based with a ~37-semitone range, ~7Hz vibrato, and subharmonic phonation, none of which is a documented Sia comparison. The more defensible read (all engines converge here) is that the model may be responding to shared *intensity/dramatic delivery* rather than timbre. | Delivery-level analogue only, not timbral |
+| Tori Amos | **Weakest of the five.** ChatGPT, Perplexity, and Qwen all explicitly say they found no documented Sia-Tori Amos vocal comparison, and Qwen specifically argues it's a production/era artifact ("female singer-songwriter" association). Gemini alone asserts a strong match, sourced to the same fan blog as above. | Weak / mostly unsupported |
+
+**Report-ready paragraph** (synthesized from the above, hedged in line with
+what's actually sourced):
+
+> The clip is a Voice Memos recording of someone singing along to Sia's
+> "Unstoppable" (*This Is Acting*, 2016) — an electropop/anthemic-pop track,
+> not, as our own working notes briefly and incorrectly assumed, part of the
+> *Fifty Shades of Grey* soundtrack. Sia is broadly documented (NPR) as
+> having a raspy, dynamically contrasting delivery — restrained, processed
+> verses giving way to forceful, belted choruses. Our models' out-of-
+> distribution top-3 picks are best read as *closed-set nearest-class
+> behavior*, not identification: with the true artist absent from the
+> 20-class label space, a track's prediction reflects whichever combination
+> of vocal timbre, delivery intensity, and production style the model
+> weighs most heavily, and this varies by model. Across our four runs, one
+> pattern is well-supported: **Madonna**, the top pick for the two
+> mixture-sensitive models (`confound_crnn`, `sota_crnn`), plausibly
+> reflects shared production characteristics (compressed, processed,
+> anthemic pop vocal chain) rather than vocal similarity — the one point
+> every research response we consulted agreed on. The other recurring picks
+> (Roxette/Marie Fredriksson, Fleetwood Mac/Stevie Nicks, Tori Amos, Queen/
+> Freddie Mercury) are more mixed: Roxette's Marie Fredriksson has an
+> independently-documented vocal profile (wide range, forceful, slightly
+> raspy delivery) that plausibly overlaps Sia's, while the strength of a
+> genuine Sia-Fleetwood Mac vocal parallel is disputed even among our
+> research sources, and no credible source documents a direct Sia
+> comparison to either Tori Amos or Freddie Mercury specifically. We treat
+> this as a case study in nearest-neighbor behavior under distribution
+> shift, not as evidence the model "recognized" anything about Sia's voice.
+
+**Not adopted from this round**: any specific numeric vocal-range claim
+(the two engines that gave one used sources weaker than the two that
+explicitly declined to); the "pop-soul" genre label; treating any single
+predicted artist as a "documented" Sia match. Also see EXPERIMENT_LOG.md for
+the full citation-quality breakdown across all four responses.
 
 ## Citations
 (see per-file docstrings in `src/models/*.py` for full citations; summary:)

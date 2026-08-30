@@ -37,7 +37,17 @@ findings were synthesized into our actual decisions and experiments.
   explanation for why our models' out-of-distribution guesses for a Sia
   "Unstoppable" clip landed on the specific artists they did, given the
   20-artist label list; (3) what further analyses (beyond more training
-  runs) would most strengthen the report.
+  runs) would most strengthen the report. All four engines (ChatGPT, Gemini,
+  Perplexity, Qwen) independently converged on paired-bootstrap/McNemar
+  significance testing as top priority — implemented directly
+  (`src/analysis_significance.py`) and found our incremental ensemble gains
+  this session don't individually clear significance, only the overall
+  ensemble-vs-single-model effect does. Also surfaced a citation-quality
+  split on Part 2: ChatGPT caught our own prompt's factual error (the wrong
+  Sia album), Perplexity's independent sourcing implicitly agreed, Gemini
+  and Qwen both repeated it uncritically; Gemini separately sourced several
+  "documented" vocal-similarity claims to a fan blog and a headphone-review
+  site.
 
 Some responses cite hyperparameters or claims without a traceable source;
 where that happened, we noted it explicitly in `MATERIALS.md`/
