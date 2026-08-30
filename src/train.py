@@ -26,6 +26,8 @@ from src.models.confound_crnn import CRNN2D_elu2
 from src.models.crnn_nasrullah_faithful import CRNNNasrullahASP, CRNNNasrullahFaithful
 from src.models.crnn_zain import CRNN2D
 from src.models.nonlocal_fgnl import CRNN_FGNL
+from src.models.nonlocal_singernet import NonLocalSingerNet
+from src.models.singer_senet import SingerSENet
 from src.models.sota_cnn import CRNN as SotaCRNN
 from src.models.sota_cnn import SampleCNN, ShortChunkCNN_Res
 from src.models.sota_cnn import CRNN_Attn, CRNN_DropBlock
@@ -70,6 +72,10 @@ MODEL_REGISTRY = {
     # sota_crnn_wide's encoder + an ArcFace margin head instead of a plain
     # linear classifier — see src/models/arcface_head.py's docstring
     "sota_crnn_wide_arcface": (lambda n_class: SotaCRNNArcFace(n_class=n_class, channel_mult=1.5), "wave"),
+    # channel-ramped (32->512) prior-year architectures — see
+    # src/models/singer_senet.py's docstring for the round-5 context
+    "singer_senet": (lambda n_class: SingerSENet(n_class=n_class), "wave10s"),
+    "nonlocal_singernet": (lambda n_class: NonLocalSingerNet(n_class=n_class), "wave10s"),
 }
 
 

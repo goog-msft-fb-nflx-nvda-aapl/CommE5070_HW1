@@ -1,5 +1,45 @@
 # Experiment log
 
+## 2026-08-30 — resolving the Gemini/Qwen non-local/SE-ResNet disagreement directly
+
+Round-5's one unresolved item: Gemini recommended porting the prior-year
+submission's channel-ramped (32->512) SE-ResNet and classic Wang et
+al.-style non-local ResNet as ensemble members; Qwen argued the opposite
+(claimed our existing `se_resnet`/`fgnl` are already the more parameter-
+efficient, better-suited-to-950-tracks choice, and that porting a naive
+channel-ramp risks overfitting). Neither response sourced the disagreement
+to a citation about our actual data scale. Per project convention, settling
+disagreements like this by running the experiment rather than picking a
+side on priors.
+
+Re-cloned the prior-year submission (sparse checkout, same as before) and
+read `task2_se_cnn.py`/`task2_nonlocal.py` in full this time (the earlier
+investigation only had partial `grep` context for these two, not enough to
+port faithfully — re-fetched to avoid guessing at architecture details).
+Ported both exactly: `src/models/singer_senet.py` (`SingerSENet` —
+Conv7x7 stem, 4 residual stages 32->64->128->256->512 with SE gating in
+every `ConvSEBlock`) and `src/models/nonlocal_singernet.py`
+(`NonLocalSingerNet` — same stem/stage structure, but with a classic
+Wang et al. non-local block, *not* the FGNL block this project's `fgnl`
+already uses, inserted into stages 2-4). Both keep their original scripts'
+mel frontend (n_mels=128, n_fft=2048, **hop=256** — narrower hop than the
+CRNN port's hop=512, kept faithfully per-model rather than silently
+unified), per-sample mel normalization, and 10s crops; training recipe
+standardized to this project's shared cosine+AdamW+300-epoch/40-patience
+convention rather than each original script's own scheduler (OneCycleLR /
+plain CosineAnnealingLR at 120 epochs), matching how `crnn_nasrullah_faithful`
+was handled.
+
+Smoke-tested both locally (forward+backward, correct output shapes:
+SingerSENet 11.4M params, NonLocalSingerNet 5.9M params) before launching.
+`--model singer_senet` on GPU 0 (batch_size=32), `--model
+nonlocal_singernet` on GPU 1 (batch_size=16, smaller — the non-local block's
+O(N^2) attention over a hop=256 feature map is more memory-hungry than the
+other architectures trained so far). tmux windows `singer_senet` /
+`nonlocal_singernet`. Results pending — will fold into MATERIALS.md and
+re-run the ensemble grid search (now against 14 candidates) once both land.
+
+
 ## 2026-08-30 — round-5 ablations finished; new 12-model ensemble, new graded submission
 
 All three round-5 ablations finished:
