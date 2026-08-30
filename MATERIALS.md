@@ -94,33 +94,36 @@ undertrained pass-1 pipeline / a since-superseded hypothesis respectively —
 kept in `results/*_v1_undertrained/`, `results/fgnl_v3_lr1e4_worse/` for the
 record, not in the table above.)
 
-**Ensemble (the actual graded submission, superseded 2026-08-30): weighted
-average of 4 from-scratch/from-scratch-eligible models** (`src/ensemble.py`,
-`results/ensemble3/ensemble_result.json`) — grid-searched integer weights
-0-2 over a 12-model candidate pool (the original 9 plus the three models
-that came out of the round-5 deep-research follow-up:
-`crnn_nasrullah_faithful`, `sota_crnn_wide_arcface`, `crnn_nasrullah_asp`).
-Best: **sota_crnn×2 + short_chunk_cnn×1 + sota_crnn_wide_arcface×1** →
-**val top1=0.857, top3=0.913** — the grid search dropped `sota_crnn_wide`
-and `sota_crnn_norm` entirely (weight 0) in favor of `sota_crnn_wide_arcface`
-(the ArcFace-margin-head ablation, individually 0.801/0.896 — *not* the
-strongest single model, but still architecturally distinct enough from
-`sota_crnn`/`short_chunk_cnn` to earn ensemble weight), improving over the
-prior 9-model ensemble's 0.853/0.905 on both metrics. Neither
-`crnn_nasrullah_faithful` nor `crnn_nasrullah_asp` (the two directly-ported
-prior-year-architecture models) made the cut — see "Round-5 deep research"
-below for why that's actually informative, not just a null result. Directly
-regenerates `results/R13921031.json`. Same caveat as before, now larger: a
-12-model, 0-2 integer-weight grid search (3^12 ≈ 531,441 combinations)
-against only 231 val tracks carries meaningfully more overfit-to-val risk in
-the *weight selection* than the 9-model version did — the individual models'
-own numbers remain the more robust per-architecture comparison; read the
-ensemble weights as "a reasonable combination that measurably helps," not a
-precisely-tuned optimum.
+**Ensemble (the actual graded submission): weighted average of 7 from-
+scratch/from-scratch-eligible models** (`src/ensemble.py`,
+`results/ensemble4/ensemble_result.json`) — grid-searched integer weights
+0-2 over the full 14-model candidate pool (original 9 + the three round-5
+ablations + `singer_senet`/`nonlocal_singernet`). Best: **sota_crnn×1 +
+sota_crnn_wide×1 + sample_cnn×1 + sota_crnn_norm×2 +
+crnn_nasrullah_faithful×1 + crnn_nasrullah_asp×2 + singer_senet×2** →
+**val top1=0.861, top3=0.913** — a further +0.5pp top1 over the 12-model
+ensemble below, with `singer_senet` (the channel-ramped SE-ResNet that tied
+`sota_crnn_wide` on individual top1) and both prior-year-CRNN-architecture
+models now earning real weight, unlike the last round. `nonlocal_singernet`
+still didn't make the cut (weight 0), consistent with it being the weakest
+of the three latest-batch models individually. Directly regenerates
+`results/R13921031.json`. Same caveat, now largest yet: a 14-model, 0-2
+integer-weight grid search (3^14 ≈ 4.78M combinations) against only 231 val
+tracks carries the most overfit-to-val risk in weight selection of any
+ensemble version so far — the individual models' own numbers remain the
+more robust per-architecture comparison; read the ensemble weights as "a
+reasonable combination that measurably helps," not a precisely-tuned
+optimum. Given how many ensemble versions have now been tried, the report
+should show the *trajectory* (9-model → 12-model → 14-model, each a genuine
+measured gain from a new architecture, not from re-tuning weights on the
+same models) rather than presenting the final number as if it were reached
+in one step.
 
-*(Prior version, for reference: 9-model pool, sota_crnn×2 + sota_crnn_wide×1
-+ short_chunk_cnn×1 + sota_crnn_norm×1 → val top1=0.853, top3=0.905,
-`results/ensemble2/ensemble_result.json`.)*
+*(Prior versions, for reference: 12-model pool, sota_crnn×2 +
+short_chunk_cnn×1 + sota_crnn_wide_arcface×1 → val top1=0.857, top3=0.913,
+`results/ensemble3/ensemble_result.json`; 9-model pool, sota_crnn×2 +
+sota_crnn_wide×1 + short_chunk_cnn×1 + sota_crnn_norm×1 → val top1=0.853,
+top3=0.905, `results/ensemble2/ensemble_result.json`.)*
 
 **Best single from-scratch model: `sota_crnn_wide`**
 — the winning architecture (Method 1 CRNN) scaled to 1.5x channel width via

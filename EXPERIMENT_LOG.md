@@ -1,5 +1,32 @@
 # Experiment log
 
+## 2026-08-30 — 14-model ensemble is the new graded submission (0.861/0.913)
+
+`results/ensemble4/`: grid search over all 14 trained models found
+**sota_crnn×1 + sota_crnn_wide×1 + sample_cnn×1 + sota_crnn_norm×2 +
+crnn_nasrullah_faithful×1 + crnn_nasrullah_asp×2 + singer_senet×2 → val
+top1=0.861, top3=0.913** — up from the 12-model ensemble's 0.857/0.913
+(top1 improved, top3 flat). `singer_senet` and both prior-year-CRNN ports
+earned real weight this time; `nonlocal_singernet` still didn't (weight 0).
+
+Ensemble trajectory this session, each step a new architecture not a
+re-tuned weight search on the same pool: 9 models → 0.853/0.905, 12 models
+(+ round-5's three ablations) → 0.857/0.913, 14 models (+ singer_senet/
+nonlocal_singernet) → 0.861/0.913. Promoted to the graded submission —
+`results/R13921031.json` regenerated (233 tracks, schema-checked),
+`readme`/`MATERIALS.md` updated with the new command and numbers.
+
+At this point the ensemble candidate pool covers every architecture either
+this project or our own prior-year submission has produced, plus every
+round-5 deep-research suggestion that was cheap enough to test directly
+(ArcFace, ASP, both channel-ramped backbones). Remaining un-pursued items,
+noted for completeness rather than as an active queue: DAMFF (checked,
+task-mismatched, not implemented — see above), a self-consistency/majority-
+vote improvement to the zero-shot audio-LLM baseline (already flagged
+`MATERIALS.md`, time-boxed out earlier), and the t-SNE/own-voice demo
+(blocked on the user supplying a clip).
+
+
 ## 2026-08-30 — singer_senet ties best single model; nonlocal_singernet finished; 14-model ensemble launched
 
 `singer_senet` and `nonlocal_singernet` (faithful ports of the prior-year
