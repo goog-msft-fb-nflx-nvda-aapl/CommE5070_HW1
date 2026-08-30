@@ -3,6 +3,7 @@
 artist20/
 *.mp3
 *.wav
+*.m4a
 
 # checkpoints / large artifacts
 checkpoints/

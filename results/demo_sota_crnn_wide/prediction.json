@@ -1,0 +1,18 @@
+{
+  "audio_path": "unstoppable_sia.wav",
+  "model": "sota_crnn_wide",
+  "top3": [
+    [
+      "tori_amos",
+      0.13690096139907837
+    ],
+    [
+      "queen",
+      0.12880712747573853
+    ],
+    [
+      "fleetwood_mac",
+      0.12375788390636444
+    ]
+  ]
+}

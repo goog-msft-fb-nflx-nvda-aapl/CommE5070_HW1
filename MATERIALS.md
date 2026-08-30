@@ -704,26 +704,52 @@ per track for inspection).
 - Mel-spectrogram + own-recording inference: input is a user-supplied clip of
   "Unstoppable" by Sia (`unstoppable_sia.m4a`, recorded via Voice Memos — not
   a train_val/test artist, so this is a genuine out-of-distribution probe,
-  not a memorized track). Ran on the graded model and the baseline for
-  contrast:
-  - `results/demo_sota_crnn/` (graded `sota_crnn`): top-3 madonna (0.224),
-    fleetwood_mac (0.124), roxette (0.108) — lower-confidence, flatter
-    distribution than the baseline below, consistent with a smaller from-
-    scratch model facing a genuinely out-of-distribution input.
+  not a memorized track). Note on the two runs below: the graded Task-2
+  submission is now a 7-model ensemble (`src/ensemble.py` doesn't support
+  running the demo script's single-clip mel-spectrogram + inference path on
+  an ensemble directly), so the demo is run per-model instead — read the
+  "graded model" runs as *the strongest single from-scratch model at the
+  time*, not the literal graded submission.
+  - `results/demo_sota_crnn_wide/` (current strongest single from-scratch
+    model, ties `singer_senet` at 0.805 val top1): top-3 tori_amos (0.137),
+    queen (0.129), fleetwood_mac (0.124) — a nearly-flat distribution (20-way
+    chance is 0.05, so these are barely above it), the most honest-looking
+    of any run here: a wider/better-trained model is *more* uncertain on a
+    genuinely out-of-distribution voice, not less, which is the correct
+    qualitative behavior even though it makes for a less satisfying demo
+    number. The mel-spectrogram (`results/demo_sota_crnn_wide/
+    melspectrogram.png`) shows a clear split: the first ~35% of the clip has
+    much more energy above mel-bin 100 than the rest, suggesting the
+    recording opens with either an a cappella/high-vocal-energy section or a
+    different acoustic setting (closer mic, more room tone) than the latter,
+    more sustained-low-frequency-dominant portion — consistent with a solo
+    Voice-Memos recording rather than a produced multi-track song, which is
+    itself worth noting in the report as a reason this input differs
+    structurally from anything in Artist20's training distribution.
+  - `results/demo_sota_crnn/` (the original, now-superseded graded
+    `sota_crnn` from earlier in the project, kept for the trajectory): top-3
+    madonna (0.224), fleetwood_mac (0.124), roxette (0.108).
   - `results/demo/` (baseline `speaker_frontend`): top-3 fleetwood_mac
     (0.469), roxette (0.232), tori_amos (0.159) — all female-fronted/alto-
     range acts, a sensible nearest-neighbor-in-timbre fallback for an
-    unknown singer.
+    unknown singer, and notably higher-confidence than any from-scratch run
+    — consistent with its much higher trained accuracy generally, though
+    also plausibly just a more overconfident model on out-of-distribution
+    input (calibration wasn't specifically measured for either).
   - `results/demo_confound_crnn/` (pass-2 `confound_crnn`, kept for
     reference): top-3 madonna (0.458), radiohead (0.175), prince (0.114).
-  - Discussion angle: none of the three models fully agree with each other
-    on this out-of-distribution input (though madonna, fleetwood_mac, and
-    roxette all show up across at least two of the three), which is itself
-    informative — with the true singer entirely absent from the 20-artist
+  - Discussion angle: across all four runs, no two models fully agree,
+    though madonna, fleetwood_mac, roxette, and tori_amos each show up in at
+    least two — with the true singer entirely absent from the 20-artist
     label space, "top-3" here reflects each model's own notion of
-    vocal-timbre similarity, not a right/wrong answer, and the partial
-    disagreement is a visible symptom of each model's differing
-    representation quality rather than a bug in any of them.
+    vocal-timbre similarity, not a right/wrong answer. The clearest trend
+    across the project's model-improvement trajectory: confidence in a
+    specific (wrong, by construction) answer *drops* as the from-scratch
+    model gets better (confound_crnn 45.8%→sota_crnn 22.4%→sota_crnn_wide
+    13.7% on its top pick) — a small but genuine piece of evidence that
+    later models are learning more genuinely discriminative,
+    less-overfit-to-training-idiosyncrasies representations, not just
+    memorizing harder.
 
 ## Citations
 (see per-file docstrings in `src/models/*.py` for full citations; summary:)

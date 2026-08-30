@@ -1,5 +1,25 @@
 # Experiment log
 
+## 2026-08-30 — own-voice demo re-run on the current best single model
+
+User confirmed the own-voice input: `unstoppable_sia.m4a` (a Voice Memos
+recording, ~57.5s, not any Artist20 artist — genuine out-of-distribution
+probe). This demo had already been run once earlier in the project
+(`results/demo_sota_crnn/`, `results/demo/`, `results/demo_confound_crnn/`
+— see MATERIALS.md) against models that are now superseded; re-ran it
+against the current strongest single from-scratch model
+(`sota_crnn_wide`) for an up-to-date data point, since the graded
+submission is now a 7-model ensemble the demo script doesn't run directly.
+
+Converted m4a→16kHz mono wav locally (`ffmpeg`), synced to the training
+server, ran `src/melspec_demo.py` (`results/demo_sota_crnn_wide/`). Top-3:
+tori_amos (0.137), queen (0.129), fleetwood_mac (0.124) — near-flat vs.
+20-way chance (0.05), the least falsely-confident of any run so far.
+Full writeup, mel-spectrogram discussion, and the confidence-drop trend
+across the project's model-improvement trajectory: MATERIALS.md
+"Visualizations".
+
+
 ## 2026-08-30 — 14-model ensemble is the new graded submission (0.861/0.913)
 
 `results/ensemble4/`: grid search over all 14 trained models found
