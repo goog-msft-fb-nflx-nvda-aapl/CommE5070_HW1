@@ -25,6 +25,8 @@ from src.models.crnn_zain import CRNN2D
 from src.models.nonlocal_fgnl import CRNN_FGNL
 from src.models.sota_cnn import CRNN as SotaCRNN
 from src.models.sota_cnn import SampleCNN, ShortChunkCNN_Res
+from src.models.sota_cnn import CRNN_Attn
+from src.models.se_resnet import SEResNet
 
 def _build_ssl_frontend(n_class):
     from src.models.ssl_frontend import SSLLinearProbe
@@ -45,6 +47,8 @@ MODEL_REGISTRY = {
     "sota_crnn": (lambda n_class: SotaCRNN(n_class=n_class), "wave"),
     "short_chunk_cnn": (lambda n_class: ShortChunkCNN_Res(n_class=n_class), "wave"),
     "sample_cnn": (lambda n_class: SampleCNN(n_class=n_class), "wave"),
+    "se_resnet": (lambda n_class: SEResNet(n_class=n_class), "wave"),
+    "sota_crnn_attn": (lambda n_class: CRNN_Attn(n_class=n_class), "wave"),
     # ssl_frontend / speaker_frontend need torch>=2.6 (HF safetensors-only
     # torch.load policy) — run these with the separate `hw1_ssl_env` conda
     # env on gsm-gpu2, not the main `hw1_singer_env`. See
