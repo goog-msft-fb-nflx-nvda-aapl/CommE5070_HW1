@@ -49,6 +49,8 @@ MODEL_REGISTRY = {
     "sample_cnn": (lambda n_class: SampleCNN(n_class=n_class), "wave"),
     "se_resnet": (lambda n_class: SEResNet(n_class=n_class), "wave"),
     "sota_crnn_attn": (lambda n_class: CRNN_Attn(n_class=n_class), "wave"),
+    "sota_crnn_narrow": (lambda n_class: SotaCRNN(n_class=n_class, channel_mult=0.5), "wave"),
+    "sota_crnn_wide": (lambda n_class: SotaCRNN(n_class=n_class, channel_mult=1.5), "wave"),
     # ssl_frontend / speaker_frontend need torch>=2.6 (HF safetensors-only
     # torch.load policy) — run these with the separate `hw1_ssl_env` conda
     # env on gsm-gpu2, not the main `hw1_singer_env`. See

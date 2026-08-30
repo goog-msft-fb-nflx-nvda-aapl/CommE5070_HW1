@@ -170,23 +170,34 @@ class SampleCNN(nn.Module):
 
 
 class CRNN(nn.Module):
-    def __init__(self, sample_rate=16000, n_fft=512, f_min=0.0, f_max=8000.0, n_mels=96, n_class=20):
+    """`channel_mult` scales conv/GRU widths for a from-scratch capacity
+    sweep (small-data overfitting-vs-undercapacity question raised, without
+    a sourced citation, in deep_research_response_3_qwen.md — tested
+    directly here rather than accepted or dismissed on priors, per user
+    instruction). Default 1.0 exactly reproduces the original (already
+    trained, 0.762 val top1) architecture."""
+
+    def __init__(self, sample_rate=16000, n_fft=512, f_min=0.0, f_max=8000.0, n_mels=96, n_class=20,
+                 channel_mult=1.0):
         super().__init__()
+        c1, c2, c3, c4 = (max(8, round(c * channel_mult)) for c in (64, 128, 128, 128))
+        gru_hidden = max(4, round(32 * channel_mult))
+
         self.spec = torchaudio.transforms.MelSpectrogram(
             sample_rate=sample_rate, n_fft=n_fft, f_min=f_min, f_max=f_max, n_mels=n_mels
         )
         self.to_db = torchaudio.transforms.AmplitudeToDB()
         self.spec_bn = nn.BatchNorm2d(1)
 
-        self.layer1 = Conv_2d(1, 64, pooling=(2, 2))
-        self.layer2 = Conv_2d(64, 128, pooling=(3, 3))
-        self.layer3 = Conv_2d(128, 128, pooling=(4, 4))
-        self.layer4 = Conv_2d(128, 128, pooling=(4, 4))
+        self.layer1 = Conv_2d(1, c1, pooling=(2, 2))
+        self.layer2 = Conv_2d(c1, c2, pooling=(3, 3))
+        self.layer3 = Conv_2d(c2, c3, pooling=(4, 4))
+        self.layer4 = Conv_2d(c3, c4, pooling=(4, 4))
 
-        self.layer5 = nn.GRU(128, 32, 2, batch_first=True)
+        self.layer5 = nn.GRU(c4, gru_hidden, 2, batch_first=True)
 
         self.dropout = nn.Dropout(0.5)
-        self.dense = nn.Linear(32, n_class)
+        self.dense = nn.Linear(gru_hidden, n_class)
 
     def embed(self, x):
         x = self.spec(x)
