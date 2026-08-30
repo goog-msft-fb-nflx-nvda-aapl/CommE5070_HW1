@@ -27,6 +27,7 @@ from src.models.sota_cnn import CRNN as SotaCRNN
 from src.models.sota_cnn import SampleCNN, ShortChunkCNN_Res
 from src.models.sota_cnn import CRNN_Attn
 from src.models.se_resnet import SEResNet
+from src.supcon_loss import supcon_loss
 
 def _build_ssl_frontend(n_class):
     from src.models.ssl_frontend import SSLLinearProbe
@@ -98,6 +99,9 @@ def main():
     ap.add_argument("--swa", action="store_true", help="stochastic weight averaging over the last swa_start_frac of training")
     ap.add_argument("--swa_start_frac", type=float, default=0.75)
     ap.add_argument("--swa_lr", type=float, default=5e-5)
+    ap.add_argument("--supcon_weight", type=float, default=0.0,
+                     help="if >0, add lambda*SupCon(embed) to the CE loss — see src/supcon_loss.py")
+    ap.add_argument("--supcon_temperature", type=float, default=0.1)
     ap.add_argument("--device", default="cuda" if torch.cuda.is_available() else "cpu")
     args = ap.parse_args()
 
@@ -141,8 +145,13 @@ def main():
         for x, y in train_loader:
             x, y = x.to(args.device), y.to(args.device)
             opt.zero_grad()
-            logits = model(x)
-            loss = criterion(logits, y)
+            if args.supcon_weight > 0:
+                emb = model.embed(x)
+                logits = model(x)  # re-run classifier head cheaply via full forward (keeps per-model head naming opaque)
+                loss = criterion(logits, y) + args.supcon_weight * supcon_loss(emb, y, temperature=args.supcon_temperature)
+            else:
+                logits = model(x)
+                loss = criterion(logits, y)
             loss.backward()
             opt.step()
             total_loss += loss.item()
