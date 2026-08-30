@@ -1,5 +1,90 @@
 # Experiment log
 
+## 2026-08-30 — round-5 responses read; ArcFace + ASP ablations launched
+
+Gemini and Qwen's round-5 responses landed
+(`deep_research/round5_prior_year_gap_and_latest_literature/response_{gemini,qwen}.md`).
+Both agree the "attention pooling hurt" result is plausibly a capacity
+artifact (narrow backbone, not attention pooling itself) and that 10s chunks
+should outperform 5s for singer ID specifically — both already being tested
+by the `crnn_nasrullah_faithful` run launched just before these came back
+(83 epochs in, val 0.706/0.853 and climbing, ahead of `sota_crnn`'s
+comparable-epoch trajectory).
+
+Both also agree architectural ensemble diversity (CRNN + SE-ResNet +
+Non-local, per our prior-year run) should beat hyperparameter-variant
+ensembles of one backbone family — consistent with our own measured
++4.8pp (9 same-family variants) vs. the prior run's own +11pp (3 distinct
+architectures). Where they **disagree**: Qwen says don't port the prior
+submission's classic Wang-et-al. non-local ResNet / channel-ramped SE-ResNet
+(claims our `fgnl`, a more parameter-efficient singer-ID-specific paper, is
+already the "modern evolution" and a naive channel-ramp to 512 would overfit
+949 tracks); Gemini's own comparison table rates a channel-ramped
+non-local ResNet "Very High" generalization and recommends porting it as
+ensemble Phase 3. Neither engine sources this specific disagreement to a
+citation about *our* data scale — flagged as unresolved, not adopted either
+way yet. Lower priority than the items below since our existing
+`se_resnet`/`fgnl` already score competitively (0.758/0.710) with the prior
+submission's individual numbers; revisit if GPU time allows once the
+current queue clears.
+
+**Citation-quality check** (per standing practice — verify hyperparameter/
+literature claims rather than trust or dismiss on priors): Qwen's specific
+numeric claim ("Kuo et al. AAAI 2021 segment-length ablation: 0.73 at 3s,
+0.74 at 5s, 0.79 at 10s") uses bracket markers ([[176]] etc.) with no
+resolvable bibliography — unverified, not adopted as a specific number
+(though the *direction*, longer chunks helping, is exactly what
+`crnn_nasrullah_faithful` is independently testing). Gemini's response does
+include a real, checkable works-cited list (24 numbered links, several
+legitimately relevant — e.g. arXiv:1901.04555 is actually the Nasrullah &
+Zhao CRNN paper we already cite, and ISMIR 2023's "Dual Attention-based
+Multi-scale Feature Fusion" paper is real and on-topic) — but footnote [12],
+cited repeatedly for the *entire* ensemble-diversity/ambiguity-decomposition
+argument (the quantitative claims backing "port more architectures"), traces
+to arXiv:2507.03690, **"Graph Neural Networks for Electricity Load
+Forecasting"** — completely unrelated to audio or ensembling theory. The
+underlying ambiguity-decomposition math (bias-variance-covariance for
+ensembles) is textbook-correct regardless, but the citation attached to it
+is wrong/fabricated — treat the *qualitative* claim (architectural diversity
+> hyperparameter diversity) as literature-plausible and already
+independently corroborated by our own measurement, but don't cite footnote
+12 itself as a source for anything audio-specific.
+
+**Two new ablations launched**, techniques neither engine's core claims
+needed us to trust blindly — both are cheap, directly testable, and target
+this project's actual open questions:
+1. **ArcFace / AAM-Softmax margin head** (`src/models/arcface_head.py`,
+   `SotaCRNNArcFace` — `sota_crnn_wide`'s encoder + an angular-margin
+   classifier instead of a plain linear layer, s=24/m=0.2, chosen as a
+   from-scratch-eligible way to make the embedding production/album-
+   invariant — directly on-topic for Hsieh et al.'s own confound framing,
+   not previously tried in this project). `--model sota_crnn_wide_arcface`,
+   new `requires_labels_in_forward` flag on the model class so
+   `src/train.py`'s loop passes `y` into `forward()` only for models that
+   need it (ArcFace needs labels to apply the margin during training; eval
+   calls `model(x)` and gets plain scaled-cosine logits, unaffected).
+   Smoke-tested (forward/backward, correct shapes) before launching. Launched
+   on GPU 1, tmux `crnn_arcface`.
+2. **Attentive Statistics Pooling (ASP)** (`CRNNNasrullahASP` in
+   `src/models/crnn_nasrullah_faithful.py` — same conv/BiGRU trunk as
+   `crnn_nasrullah_faithful`, weighted mean *and* weighted std concatenated
+   instead of weighted-mean-only attention pooling). Deliberately built on
+   the *same* already-capacity-matched backbone as the plain-attention run,
+   not `sota_crnn`'s narrow one — a clean ASP-vs-plain-attention comparison
+   that isn't confounded by backbone width the way this project's earlier
+   `sota_crnn_attn` ablation was. Smoke-tested, launched on GPU 2, tmux
+   `crnn_asp`.
+
+Both wired into `src/ensemble.py`/`src/infer_test.py` automatically (no
+model-specific changes needed there — they dispatch on `kind`, which was
+already handled for `crnn_nasrullah_faithful`/`wave10s`, or falls through to
+the generic `wave` branch for the ArcFace model). Check
+`results/sota_crnn_wide_arcface/summary.json` and
+`results/crnn_nasrullah_asp/summary.json` once done; fold into
+`MATERIALS.md` and the ensemble candidate pool alongside
+`crnn_nasrullah_faithful`.
+
+
 ## 2026-08-30 — prior-year submission re-investigated; faithful-CRNN gap found and launched
 
 User asked us to re-investigate our own prior-year submission

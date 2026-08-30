@@ -180,6 +180,31 @@ beat this project's ensemble. Two findings:
    project's default full-track averaging, see the ensemble/TTA section
    above.)
 
+**Round-5 deep research + two more ablations (2026-08-30).** Relayed
+`deep_research/round5_prior_year_gap_and_latest_literature/prompt.md` to
+Gemini and Qwen. Both corroborate the capacity-artifact hypothesis above and
+that 10s chunks should beat 5s for this task — already what
+`crnn_nasrullah_faithful` tests. Both also agree architecturally-diverse
+ensembles (per our prior-year run) should beat same-family hyperparameter
+ensembles (matches our own +4.8pp vs. their +11pp), though they directly
+**disagree** on whether porting the prior submission's classic non-local
+ResNet/channel-ramped SE-ResNet is worth it — unresolved, not adopted
+either way, see EXPERIMENT_LOG.md for the full breakdown. One of Gemini's
+citations (footnote 12, backing its entire ensemble-diversity argument)
+resolves to an unrelated electricity-load-forecasting paper — a fabricated/
+mismatched citation, flagged, not trusted as a source even though the
+underlying math is textbook-correct.
+
+Two new ablations launched off the parts of both responses that were cheap,
+concrete, and not already covered: **ArcFace/AAM-Softmax margin head**
+(`sota_crnn_wide_arcface` — makes the embedding production/album-invariant,
+directly on-topic for this dataset's own confound framing) and **Attentive
+Statistics Pooling** (`crnn_nasrullah_asp` — weighted mean+std instead of
+weighted-mean-only attention, on the *same* capacity-matched backbone as
+`crnn_nasrullah_faithful`, so it isolates the pooling-statistics question
+without the backbone-width confound). Both smoke-tested and running; results
+pending.
+
 **`fgnl`**: two retries (lr=1e-4, then no-augment-at-all) both under-
 performed the original pass-2 run's 52.4%... except the no-augment retry
 actually recovered to 0.710 — *matching* crnn_zain and beating the

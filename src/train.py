@@ -21,8 +21,9 @@ from src.data.dataset import (
     WaveformTrainDataset,
 )
 from src.evaluate import evaluate_and_save, evaluate_metrics_only
+from src.models.arcface_head import SotaCRNNArcFace
 from src.models.confound_crnn import CRNN2D_elu2
-from src.models.crnn_nasrullah_faithful import CRNNNasrullahFaithful
+from src.models.crnn_nasrullah_faithful import CRNNNasrullahASP, CRNNNasrullahFaithful
 from src.models.crnn_zain import CRNN2D
 from src.models.nonlocal_fgnl import CRNN_FGNL
 from src.models.sota_cnn import CRNN as SotaCRNN
@@ -65,6 +66,10 @@ MODEL_REGISTRY = {
     # faithful port of our prior-year submission's CRNN — see the model
     # docstring for exactly what it isolates vs. sota_crnn/CRNN_Attn/crnn_zain
     "crnn_nasrullah_faithful": (lambda n_class: CRNNNasrullahFaithful(n_class=n_class), "wave10s"),
+    "crnn_nasrullah_asp": (lambda n_class: CRNNNasrullahASP(n_class=n_class), "wave10s"),
+    # sota_crnn_wide's encoder + an ArcFace margin head instead of a plain
+    # linear classifier — see src/models/arcface_head.py's docstring
+    "sota_crnn_wide_arcface": (lambda n_class: SotaCRNNArcFace(n_class=n_class, channel_mult=1.5), "wave"),
 }
 
 
@@ -164,12 +169,13 @@ def main():
         for x, y in train_loader:
             x, y = x.to(args.device), y.to(args.device)
             opt.zero_grad()
+            needs_labels = getattr(model, "requires_labels_in_forward", False)
             if args.supcon_weight > 0:
                 emb = model.embed(x)
-                logits = model(x)  # re-run classifier head cheaply via full forward (keeps per-model head naming opaque)
+                logits = model(x, y) if needs_labels else model(x)  # re-run classifier head cheaply via full forward (keeps per-model head naming opaque)
                 loss = criterion(logits, y) + args.supcon_weight * supcon_loss(emb, y, temperature=args.supcon_temperature)
             else:
-                logits = model(x)
+                logits = model(x, y) if needs_labels else model(x)
                 loss = criterion(logits, y)
             loss.backward()
             opt.step()

@@ -105,3 +105,38 @@ class CRNNNasrullahFaithful(nn.Module):
 
     def forward(self, x):
         return self.classifier(self.embed(x))
+
+
+class CRNNNasrullahASP(CRNNNasrullahFaithful):
+    """Same conv/BiGRU trunk as `CRNNNasrullahFaithful`, but with Attentive
+    Statistics Pooling (weighted mean *and* weighted std, concatenated)
+    instead of plain weighted-mean attention pooling — per
+    deep_research/round5_prior_year_gap_and_latest_literature (both engines'
+    responses raised ASP as a natural extension once the backbone has enough
+    capacity for attention pooling to help at all; this directly tests ASP
+    vs. plain attention on the *same*, already-capacity-matched backbone,
+    rather than confounding the comparison with backbone width the way this
+    project's earlier `sota_crnn_attn` ablation did)."""
+
+    def __init__(self, sample_rate=16000, n_fft=2048, hop_length=512, n_mels=128,
+                 f_min=20.0, f_max=8000.0, gru_hidden=256, gru_layers=2, n_class=20):
+        super().__init__(sample_rate=sample_rate, n_fft=n_fft, hop_length=hop_length, n_mels=n_mels,
+                          f_min=f_min, f_max=f_max, gru_hidden=gru_hidden, gru_layers=gru_layers, n_class=n_class)
+        self.classifier = nn.Sequential(
+            nn.Linear(gru_hidden * 2 * 2, 256),  # mean + std, each gru_hidden*2-dim
+            nn.ReLU(),
+            nn.Dropout(0.5),
+            nn.Linear(256, n_class),
+        )
+
+    def embed(self, x):
+        x = self._log_mel(x).unsqueeze(1)
+        x = self.cnn(x)
+        n, c, f, t = x.shape
+        x = x.permute(0, 3, 1, 2).contiguous().view(n, t, c * f)
+        x, _ = self.gru(x)  # (N, T', 512)
+        attn_w = torch.softmax(self.attn(x), dim=1)  # (N, T', 1)
+        mean = (x * attn_w).sum(dim=1)
+        var = ((x - mean.unsqueeze(1)) ** 2 * attn_w).sum(dim=1).clamp(min=1e-8)
+        std = var.sqrt()
+        return torch.cat([mean, std], dim=1)  # (N, 1024)
