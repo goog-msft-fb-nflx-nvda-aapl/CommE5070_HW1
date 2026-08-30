@@ -1,6 +1,6 @@
 # Deep Research prompts and responses
 
-Five rounds of externally-run research, used to inform architecture, data,
+Six rounds of externally-run research, used to inform architecture, data,
 and training-recipe decisions in this project. Each round is a prompt we
 wrote (`prompt.md`), relayed to one or more research assistants (Gemini,
 Perplexity, ChatGPT, and/or Qwen — whichever we had access to for that
@@ -30,6 +30,14 @@ findings were synthesized into our actual decisions and experiments.
   smaller backbone than the one that originally used them); asks for
   literature grounding on that gap plus the latest (2023-2026) ICASSP/
   Interspeech/AAAI/NeurIPS work on from-scratch, small-N singer/artist ID.
+- **round6_error_analysis_and_report_depth** — three-part ask for the final
+  report: (1) error-analysis methodology for singer/artist classification
+  specifically, including whether small-eval-set (231 tracks) model
+  comparisons need a significance test; (2) a musicologically-grounded
+  explanation for why our models' out-of-distribution guesses for a Sia
+  "Unstoppable" clip landed on the specific artists they did, given the
+  20-artist label list; (3) what further analyses (beyond more training
+  runs) would most strengthen the report.
 
 Some responses cite hyperparameters or claims without a traceable source;
 where that happened, we noted it explicitly in `MATERIALS.md`/
