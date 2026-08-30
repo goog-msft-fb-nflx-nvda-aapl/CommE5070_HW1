@@ -1,5 +1,55 @@
 # Experiment log
 
+## 2026-08-30 — lecture02 scrutiny + user's prior-run comparison + master ablation queue
+
+**lecture02_classification.md scrutiny**: added `ShortChunkCNN_Res` and
+`SampleCNN` (both minzwon/sota-music-tagging-models, spotlighted in the
+lecture) — training. Added time-shift TTA to `src/evaluate.py` — measured on
+`sota_crnn`: **hurt** slightly (76.2%→75.8% top1, flat top3). Not used for
+submission; kept as a documented negative result, not deleted.
+
+**User's prior run** (github.com/goog-msft-fb-nflx-nvda-aapl/NTU, same
+assignment, downloaded to
+`/private/tmp/.../scratchpad/prev_run/`): ensemble of 3 architectures
+(CRNN/SE-ResNet/NonLocal, weighted 1/2/1) went 0.714 best-individual →
+0.825 ensemble on their val set — the single largest lever in either
+project. Their TTA (10 independent random crops averaged) reportedly gave
+CRNN 0.65→0.77, but their *non-TTA baseline* was a single random 10s crop —
+much weaker than our baseline (already full-song non-overlapping-chunk
+averaging), so their result doesn't contradict our own TTA finding; it's
+not evaluated against the same baseline. Still testing our own random-crop
+variant directly rather than assuming per user instruction #2. Other
+differences worth testing directly rather than assuming irrelevant:
+per-sample mel normalization (mean/std), 10s segments (vs our 5s), label
+smoothing, AdamW vs Adam, attention pooling vs last-GRU-state pooling, SE
+blocks.
+
+**Master ablation queue** (user: don't ask, list and run all, parallel where
+GPU allows; don't reject anything on plausibility alone):
+1. Weighted-average ensemble of all trained from-scratch models — highest
+   validated lever, implementing first.
+2. AdamW (decoupled weight decay) vs current Adam+L2 — cheap flag.
+3. Label smoothing 0.1 — cheap flag.
+4. Per-sample mel normalization (mean/std per chunk) — cheap flag.
+5. 10s segments vs current 5s — needs dataset param change.
+6. Random-crop TTA (N=10 independent crops, matching user's prior-run
+   method exactly) vs single-crop baseline vs our full-tile averaging —
+   direct 3-way comparison.
+7. Attention pooling (vs last-GRU-timestep) for the CRNN family.
+8. SE (squeeze-excitation) blocks — new architecture.
+9. Capacity sweep (0.5x / 1x / 1.5x channels) — Qwen round-3, previously
+   discounted for being uncited, now queued to actually test.
+10. DropBlock — Qwen round-3.
+11. SWA (stochastic weight averaging) — Qwen round-3.
+12. Supervised contrastive (SupCon) auxiliary loss — Qwen/Perplexity round-3.
+13. SimCLR/BYOL self-supervised pretraining (same-track crops, decoupled
+    NT-Xent, reuse CRNN encoder) — round-4 consensus recipe (Perplexity's
+    version most concretely sourced; Gemini's expectation table: +1-3pp
+    realistic, +3-6pp good, >6pp unlikely — kept as a stated prior, not a
+    reason to skip the experiment).
+14. fgnl no-augment isolation run — already in progress, will resolve
+    whether SpecAugment specifically is what hurt it.
+
 ## 2026-08-30 — Task 2 undertraining fix + remix ablation + graded model swap
 
 User flagged the Task2 formula score (top1 + 0.5*top3, then 0.671+0.5*0.823=
