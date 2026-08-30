@@ -1,5 +1,26 @@
 # Experiment log
 
+## 2026-08-30 — full ablation queue launched (14 items, all from the batch-2 list)
+
+Every item from the earlier master queue is now either done or running.
+Added since batch 2: `src/supcon_loss.py` (SupCon auxiliary loss, smoke-
+tested, launched as `sota_crnn_supcon`), `src/models/dropblock.py` +
+`CRNN_DropBlock` (smoke-tested, launched as `sota_crnn_dropblock`),
+`src/data/ssl_dataset.py` + `src/pretrain_ssl.py` (SimCLR/NT-Xent
+pretraining reusing `sota_crnn`'s encoder, round-4 recipe — smoke-tested
+both the pretrain loop and the `--init_encoder` fine-tune path; chained job
+`ssl_pretrain` window runs 200-epoch pretrain then auto-launches fine-tune
+into `sota_crnn_ssl_finetune`).
+
+Running (13 windows + the ensemble/TTA-comparison already resolved):
+short_chunk_cnn, sample_cnn, fgnl_noaug, sota_adamw_ls, se_resnet,
+crnn_attn, crnn_narrow, crnn_wide, crnn_norm, sota_swa, sota_supcon,
+crnn_dropblock, ssl_pretrain(→ssl_finetune). Check `results/<name>/
+summary.json` (or `summary_swa.json` for the SWA run) for whichever have
+landed — none had finished as of this entry. gsm-gpu2 load ~42/128 cores,
+all 4 GPUs well under VRAM limits — no further capacity concerns.
+
+
 ## 2026-08-30 — batch 2: 11 concurrent jobs launched (user left GPU running unattended)
 
 All on gsm-gpu2, tmux session `hw1_singer`, epochs=300/patience=40 (patience
