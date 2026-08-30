@@ -25,7 +25,7 @@ from src.models.crnn_zain import CRNN2D
 from src.models.nonlocal_fgnl import CRNN_FGNL
 from src.models.sota_cnn import CRNN as SotaCRNN
 from src.models.sota_cnn import SampleCNN, ShortChunkCNN_Res
-from src.models.sota_cnn import CRNN_Attn
+from src.models.sota_cnn import CRNN_Attn, CRNN_DropBlock
 from src.models.se_resnet import SEResNet
 from src.supcon_loss import supcon_loss
 
@@ -53,6 +53,7 @@ MODEL_REGISTRY = {
     "sota_crnn_narrow": (lambda n_class: SotaCRNN(n_class=n_class, channel_mult=0.5), "wave"),
     "sota_crnn_wide": (lambda n_class: SotaCRNN(n_class=n_class, channel_mult=1.5), "wave"),
     "sota_crnn_norm": (lambda n_class: SotaCRNN(n_class=n_class, normalize_mel=True), "wave"),
+    "sota_crnn_dropblock": (lambda n_class: CRNN_DropBlock(n_class=n_class), "wave"),
     # ssl_frontend / speaker_frontend need torch>=2.6 (HF safetensors-only
     # torch.load policy) — run these with the separate `hw1_ssl_env` conda
     # env on gsm-gpu2, not the main `hw1_singer_env`. See

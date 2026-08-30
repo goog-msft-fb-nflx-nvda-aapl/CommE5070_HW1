@@ -230,6 +230,59 @@ class CRNN(nn.Module):
         return self.dense(self.dropout(emb))
 
 
+class CRNN_DropBlock(nn.Module):
+    """Same as `CRNN` but with `DropBlock2d` (src/models/dropblock.py) after
+    each conv block instead of relying only on dropout+weight-decay for
+    regularization — Qwen round-3 flagged DropBlock as "specifically
+    validated for audio spectrograms" without a citation; tested directly
+    rather than accepted or dismissed on that claim alone."""
+
+    def __init__(self, sample_rate=16000, n_fft=512, f_min=0.0, f_max=8000.0, n_mels=96, n_class=20,
+                 drop_prob=0.1, block_size=5):
+        super().__init__()
+        from .dropblock import DropBlock2d
+
+        self.spec = torchaudio.transforms.MelSpectrogram(
+            sample_rate=sample_rate, n_fft=n_fft, f_min=f_min, f_max=f_max, n_mels=n_mels
+        )
+        self.to_db = torchaudio.transforms.AmplitudeToDB()
+        self.spec_bn = nn.BatchNorm2d(1)
+
+        self.layer1 = Conv_2d(1, 64, pooling=(2, 2))
+        self.layer2 = Conv_2d(64, 128, pooling=(3, 3))
+        self.layer3 = Conv_2d(128, 128, pooling=(4, 4))
+        self.layer4 = Conv_2d(128, 128, pooling=(4, 4))
+        self.db1 = DropBlock2d(drop_prob, block_size)
+        self.db2 = DropBlock2d(drop_prob, block_size)
+        self.db3 = DropBlock2d(drop_prob, block_size)
+        self.db4 = DropBlock2d(drop_prob, block_size)
+
+        self.layer5 = nn.GRU(128, 32, 2, batch_first=True)
+
+        self.dropout = nn.Dropout(0.5)
+        self.dense = nn.Linear(32, n_class)
+
+    def embed(self, x):
+        x = self.spec(x)
+        x = self.to_db(x)
+        x = x.unsqueeze(1)
+        x = self.spec_bn(x)
+
+        x = self.db1(self.layer1(x))
+        x = self.db2(self.layer2(x))
+        x = self.db3(self.layer3(x))
+        x = self.db4(self.layer4(x))
+
+        x = x.squeeze(2)
+        x = x.permute(0, 2, 1)
+        x, _ = self.layer5(x)
+        return x[:, -1, :]
+
+    def forward(self, x):
+        emb = self.embed(x)
+        return self.dense(self.dropout(emb))
+
+
 class CRNN_Attn(nn.Module):
     """Same conv/GRU stack as `CRNN` above, but with additive attention
     pooling over the GRU's full output sequence instead of taking only the
