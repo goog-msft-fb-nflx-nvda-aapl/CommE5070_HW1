@@ -18,10 +18,10 @@ transfer better to singer identity than a speech-only SSL model. Requires
 Note: `m-a-p/MERT-v1-95M`'s checkpoint predates HF's `safetensors`-only
 `torch.load` policy for newer `transformers` — loading it requires
 `torch>=2.6`. This repo's main training env pins `torch==2.5.1+cu121` (set
-up before this restriction was hit) and has 4 concurrent jobs running in
-it; rather than risk destabilizing those, this model (and
+up before this restriction was hit) and has several concurrent jobs running
+in it; rather than risk destabilizing those, this model (and
 speaker_frontend.py) run in a separate `hw1_ssl_env` conda env
-(`torch>=2.6+cu121`) on gsm-gpu2. See EXPERIMENT_LOG.md.
+(`torch>=2.6+cu121`) on our training server. See EXPERIMENT_LOG.md.
 """
 import torch
 import torch.nn as nn

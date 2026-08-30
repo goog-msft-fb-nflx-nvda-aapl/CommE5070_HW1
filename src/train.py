@@ -55,8 +55,8 @@ MODEL_REGISTRY = {
     "sota_crnn_norm": (lambda n_class: SotaCRNN(n_class=n_class, normalize_mel=True), "wave"),
     "sota_crnn_dropblock": (lambda n_class: CRNN_DropBlock(n_class=n_class), "wave"),
     # ssl_frontend / speaker_frontend need torch>=2.6 (HF safetensors-only
-    # torch.load policy) — run these with the separate `hw1_ssl_env` conda
-    # env on gsm-gpu2, not the main `hw1_singer_env`. See
+    # torch.load policy) — run these in a separate conda env (e.g.
+    # `hw1_ssl_env`) from the main `hw1_singer_env`. See
     # src/models/ssl_frontend.py's docstring / EXPERIMENT_LOG.md.
     "ssl_frontend": (_build_ssl_frontend, "wave"),
     "speaker_frontend": (_build_speaker_frontend, "wave"),

@@ -5,7 +5,7 @@ instrumental remixing (src/data/remix_dataset.py) — per Hsieh et al.,
 ICASSP 2020 (bill317996/Singer-identification-in-artist20), the technique
 that gave their CRNN its largest reported gain (+7-8pp song-level F1),
 confirmed as the top from-scratch-compatible lever by two independent Deep
-Research follow-ups (deep_research_response_3_*.md).
+Research follow-ups (deep_research/round3_from_scratch_improvement/response_*.md).
 
 Train split only — remix pairs are constructed only from training data, per
 "never use val/test for training".

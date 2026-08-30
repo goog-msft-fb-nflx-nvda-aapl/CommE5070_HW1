@@ -30,7 +30,7 @@ higher epoch cap (300, patience 40) — pass 2's numbers below reflect that.
 Also added a cross-song vocal/instrumental remix ablation
 (`confound_crnn_remix`), the top lever identified by a further Deep Research
 round specifically on improving these from-scratch numbers
-(`deep_research_response_3_*.md`).
+(`deep_research/round3_from_scratch_improvement/response_*.md`).
 
 ## Task 1 — traditional ML
 - Features: MFCC(20)+delta+delta2, chroma, spectral contrast/centroid/bandwidth/
@@ -54,7 +54,7 @@ round specifically on improving these from-scratch numbers
   graded — the feature-group ablation and permutation-importance analysis in
   "Deep-dive ablations" below, which explains *why* this number is what it
   is, is the actual graded content.)
-- Took ~4.5 hours on gsm-gpu2 (single-threaded librosa HPSS/tonnetz on
+- Took ~4.5 hours on our training server (single-threaded librosa HPSS/tonnetz on
   full-length songs is slow, and `SVC(probability=True)`'s internal 5-fold CV
   compounded it) — noted for next time: chunk/parallelize extraction and cache
   incrementally rather than only at the end.
@@ -235,7 +235,7 @@ incident affects the graded submission (`sota_crnn`, trained independently) —
 kept here as a paper trail, not because the number still matters on its own.
 
 ## Deep Research synthesis (relayed by user, 2026-08-29, 3 engines: Gemini,
-Perplexity, Qwen — full responses in `deep_research_response_*.md`)
+Perplexity, Qwen — full responses in `deep_research/round1_sota_and_architecture_survey/response_*.md`)
 
 **On vocal source separation** — the three engines *disagreed* with each
 other going in, which is itself the finding worth reporting, and our own
@@ -274,7 +274,7 @@ plus Task 1 already fully covers the assignment's required methods — flagged
 here as the clearest next step if more time is available, rather than adding
 integration risk this late in a already-parallel 8-job run.
 
-**Other candidates surfaced** (see `deep_research_response_*.md` for full
+**Other candidates surfaced** (see `deep_research/round1_sota_and_architecture_survey/response_*.md` for full
 detail — not pursued, listed for report completeness):
 - Whisper encoder (pooled intermediate layers) as a third SSL paradigm distinct
   from MERT (music) and ECAPA (speech) — 2 of 3 engines flagged this as
@@ -294,8 +294,8 @@ detail — not pursued, listed for report completeness):
 ## Deep-dive ablations (round 2 — Deep Research follow-up, 2026-08-30)
 
 A second, follow-up Deep Research round (4 engines this time: Gemini,
-Perplexity, ChatGPT, Qwen — `deep_research_prompt_2.md` /
-`deep_research_response_2_*.md`) asked for (1) the actual Artist20 SOTA
+Perplexity, ChatGPT, Qwen — `deep_research/round2_sota_context_and_perartifact_ablations/prompt.md` /
+`deep_research/round2_sota_context_and_perartifact_ablations/response_*.md`) asked for (1) the actual Artist20 SOTA
 context for our numbers and (2) specific ablations per method. Results below;
 scripts are `src/analysis_*.py`, raw JSON in `results/analysis/`.
 
@@ -478,7 +478,7 @@ ChatGPT/Perplexity's shared recommendation.
 
 Triggered directly by the pass-1 (undertrained) numbers looking "extremely
 low" — a third Deep Research round (2 engines: Perplexity, Qwen —
-`deep_research_prompt_3.md` / `deep_research_response_3_*.md`) asked
+`deep_research/round3_from_scratch_improvement/prompt.md` / `deep_research/round3_from_scratch_improvement/response_*.md`) asked
 specifically what's needed to close the gap to the original papers, scoped
 to techniques that stay from-scratch-eligible per the TA's constraint.
 

@@ -1,5 +1,5 @@
 """Diagnostic analyses over the from-scratch CRNN family, per the Deep
-Research follow-up (deep_research_prompt_2.md / deep_research_response_2_*.md):
+Research follow-up (deep_research/round2_sota_context_and_perartifact_ablations/{prompt,response_*}.md):
 
 1. Ensemble diversity: pairwise Cohen's kappa, disagreement rate, and an
    oracle-ensemble upper bound across confound_crnn / crnn_zain / sota_crnn /

@@ -172,7 +172,7 @@ class SampleCNN(nn.Module):
 class CRNN(nn.Module):
     """`channel_mult` scales conv/GRU widths for a from-scratch capacity
     sweep (small-data overfitting-vs-undercapacity question raised, without
-    a sourced citation, in deep_research_response_3_qwen.md — tested
+    a sourced citation, in deep_research/round3_from_scratch_improvement/response_qwen.md — tested
     directly here rather than accepted or dismissed on priors, per user
     instruction). Default 1.0 exactly reproduces the original (already
     trained, 0.762 val top1) architecture."""

@@ -44,13 +44,13 @@ short_chunk_cnn, sample_cnn, fgnl_noaug, sota_adamw_ls, se_resnet,
 crnn_attn, crnn_narrow, crnn_wide, crnn_norm, sota_swa, sota_supcon,
 crnn_dropblock, ssl_pretrain(→ssl_finetune). Check `results/<name>/
 summary.json` (or `summary_swa.json` for the SWA run) for whichever have
-landed — none had finished as of this entry. gsm-gpu2 load ~42/128 cores,
+landed — none had finished as of this entry. Training server load ~42/128 cores,
 all 4 GPUs well under VRAM limits — no further capacity concerns.
 
 
 ## 2026-08-30 — batch 2: 11 concurrent jobs launched (user left GPU running unattended)
 
-All on gsm-gpu2, tmux session `hw1_singer`, epochs=300/patience=40 (patience
+All on our training server, tmux session `hw1_singer`, epochs=300/patience=40 (patience
 60 for SWA) unless noted, all with `--optimizer adamw --label_smoothing 0.1`
 unless noted otherwise:
 
@@ -185,7 +185,7 @@ survey prompt for further improvement, (3) confirm the allowed training data.
 - Also implemented cross-song vocal/instrumental remix augmentation
   (`src/data/remix_dataset.py`, `src/data/separate_accompaniment.py`) — the
   top from-scratch-compatible lever per a targeted third Deep Research round
-  (`deep_research_prompt_3.md`), since it's literally the technique from
+  (`deep_research/round3_from_scratch_improvement/prompt.md`), since it's literally the technique from
   Hsieh et al.'s own paper (the architecture `confound_crnn` ports). Effect
   in our setup was much smaller than the literature's (+1.3pp top3, flat
   top1) — see MATERIALS.md for the honest writeup of why, not tuned to force
@@ -263,10 +263,10 @@ building (deferred to the Claude-web pass over `MATERIALS.md`, per plan).
 All 6 checkpoints stripped down to small files (largest 3.5MB, smallest 220KB —
 see `results/*/best*.pt` locally) and confirmed correct. Tried uploading the
 smallest one (220KB / 294KB base64) via `mcp__claude_ai_Google_Drive__create_file`
-and hit a **hard wall**: the file has to be read into my own context first to pass
-as inline `base64Content`, and the `Read` tool caps at 256KB — so even the
-smallest checkpoint (294KB base64-encoded) can't be relayed through me. No
-chunked/append upload path exists on this tool either.
+and hit a **hard wall**: the file has to be read into the assistant's context
+first to pass as inline `base64Content`, and the `Read` tool caps at 256KB —
+so even the smallest checkpoint (294KB base64-encoded) can't be relayed this
+way. No chunked/append upload path exists on this tool either.
 
 **Action needed from the user**: drag these files into a Google Drive folder and
 set sharing to "anyone with the link" (a setting this MCP tool also can't set —
@@ -283,7 +283,7 @@ everything else (code, results, test predictions) is already in the GitHub repo.
 
 ## 2026-08-29 — session 2 notes (mid-session, training in progress)
 
-- Deep Research responses (3 engines, saved by user as `deep_research_response_*.md`,
+- Deep Research responses (3 engines, saved by user as `deep_research/round1_sota_and_architecture_survey/response_*.md`,
   now committed) synthesized into `MATERIALS.md`. Key finding to remember when writing
   up the vocal-separation ablation: the engines *disagree* on whether separation helps
   or hurts — report our own measured delta, don't assume a direction.
@@ -308,21 +308,21 @@ everything else (code, results, test predictions) is already in the GitHub repo.
 
 ## 2026-08-29 — session 1: scaffold + reference ports (paused, offline)
 
-**Status when paused: no GPU job running.** `gsm-gpu2` tmux session `hw1_singer` finished
+**Status when paused: no GPU job running.** Our training server's tmux session `hw1_singer` finished
 its one-off conda env setup (`pip install ... > install_status.txt` shows `INSTALL_DONE`)
 and is sitting idle at a bash prompt — nothing to kill. No training has started yet.
 
 ### Done
-- Access checks: gsm-gpu2 (4x H200 NVL, all idle, 1.1TB free on `/home/jtan`), GitHub
+- Access checks: our training server (4x H200 NVL GPUs, 128 CPU cores, all idle, 1.1TB free), GitHub
   (`goog-msft-fb-nflx-nvda-aapl`, switched active), HuggingFace (reachable, no token —
   fine for public models, will flag if something needed turns out gated).
 - Repo scaffolded at `/Users/chun-feitan/Desktop/CommE5070/HW1/CommE5070_HW1/`, own git
   repo (root `~/Desktop` is an unrelated BlueWX repo — never touch that level), pushed to
   `https://github.com/goog-msft-fb-nflx-nvda-aapl/CommE5070_HW1` (public).
-- gsm-gpu2: new conda env `hw1_singer_env` (python 3.10), packages installed — torch
+- Training server: new conda env `hw1_singer_env` (python 3.10), packages installed — torch
   2.5.1+cu121, torchaudio 2.5.1+cu121, librosa, scikit-learn, transformers,
   huggingface_hub, matplotlib, seaborn, pandas, tqdm, soundfile, demucs, speechbrain.
-  New tmux session `hw1_singer` on gsm-gpu2 (separate from the pre-existing, unrelated
+  New tmux session `hw1_singer` on our training server (separate from the pre-existing, unrelated
   `oita_exp` session — don't touch that one).
 - Cloned the 5 reference repos read-only into the local scratchpad
   (`/private/tmp/claude-501/.../scratchpad/refs/`, not part of this git repo) to port
@@ -336,7 +336,7 @@ and is sitting idle at a bash prompt — nothing to kill. No training has starte
   - `src/data/prepare_index.py` — builds `labels.json`/`train.json`/`val.json`/`test.json`
     manifests from the raw `train.json`/`val.json`/`test/` dataset layout. **Not yet run**
     (needs `--data_root` pointed at the local `Hw1/hw1/artist20/` dir, or a copy of it on
-    gsm-gpu2).
+    our training server).
   - `src/data/dataset.py` — two chunk representations: `MelChunk{Train,Eval}Dataset`
     (log-mel, n_mels=128, n_fft=2048, hop=512, chunk_frames=157 ≈5.02s, matching
     bill317996's `utility.py` slicing) for the CRNN family, and
@@ -363,11 +363,11 @@ and is sitting idle at a bash prompt — nothing to kill. No training has starte
 
 ### Not yet done (next steps, in order)
 1. **Sanity-check the model files actually run** — no forward pass has been tested yet
-   (no torch environment available locally; needs gsm-gpu2's `hw1_singer_env` or a local
+   (no torch environment available locally; needs our training server's `hw1_singer_env` or a local
    dry run with dummy tensors). Do this *before* trusting any of the architecture ports.
 2. `src/data/prepare_index.py` — run it, verify counts (train=949, val=231, test=233,
    labels=20).
-3. Sync code + dataset to gsm-gpu2 (`~/hw1_singer/`), keeping to `/home/jtan/` only.
+3. Sync code + dataset to our training server (`~/hw1_singer/`), keeping to our own home directory only.
 4. `src/classical_ml.py` (Task 1) — not started.
 5. `src/train.py` (unified trainer) + `src/evaluate.py` (confusion matrix, top1/top3,
    song-level chunk aggregation) — not started. Needed before any model above can

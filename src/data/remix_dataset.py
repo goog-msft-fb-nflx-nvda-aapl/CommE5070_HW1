@@ -3,7 +3,7 @@
 their CRNN's largest reported gain (+7-8pp song-level F1 going from
 Origin-only to Origin+Vocal-only+Remix combined training). Confirmed as the
 top from-scratch-compatible lever for this exact architecture/dataset by two
-independent Deep Research follow-ups (deep_research_response_3_*.md).
+independent Deep Research follow-ups (deep_research/round3_from_scratch_improvement/response_*.md).
 
 Each `__getitem__` call stochastically picks one of three "views" for that
 training index, approximating Hsieh et al.'s combined training pool without

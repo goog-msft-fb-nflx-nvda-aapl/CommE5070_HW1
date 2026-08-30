@@ -1,5 +1,5 @@
 """SimCLR-style contrastive pretraining, from scratch, on the training split
-only. Per the round-4 Deep Research consensus (deep_research_response_4_*.md
+only. Per the round-4 Deep Research consensus (deep_research/round4_ssl_pretraining_recipe/response_*.md
 — Perplexity's recipe is the most concretely sourced): same-track two-crop
 positives, NT-Xent loss, small projection head discarded after pretraining.
 Fully from-scratch-eligible (self-supervised on our own 949 tracks, no
