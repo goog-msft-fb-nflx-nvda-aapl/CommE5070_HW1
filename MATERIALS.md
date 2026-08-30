@@ -94,22 +94,33 @@ undertrained pass-1 pipeline / a since-superseded hypothesis respectively —
 kept in `results/*_v1_undertrained/`, `results/fgnl_v3_lr1e4_worse/` for the
 record, not in the table above.)
 
-**Ensemble (the actual graded submission): weighted average of 9 from-
-scratch models** (`src/ensemble.py`, `results/ensemble2/ensemble_result.json`)
-— grid-searched integer weights 0-2 over confound_crnn, crnn_zain, sota_crnn,
-sota_crnn_wide, short_chunk_cnn, se_resnet, fgnl, sample_cnn,
-sota_crnn_norm. Best: sota_crnn×2 + sota_crnn_wide×1 + short_chunk_cnn×1 +
-sota_crnn_norm×1 → **val top1=0.853, top3=0.905** — +4.8pp over
-`sota_crnn_wide` alone, the largest single lever in the whole from-scratch
-comparison, and directly validated twice now (this project's first, smaller
-ensemble at +3.0pp; the user's own prior run at +11pp). Directly regenerates
-`results/R13921031.json`. Caveat stated plainly, not hidden: a 9-model,
-0-2 integer-weight grid search (3^9 ≈ 19683 combinations) against only 231
-val tracks carries real overfit-to-val risk in the *weight selection*
-specifically — the individual models' own numbers are the more robust
-per-architecture comparison; the ensemble weights should be read as "a
-reasonable combination that measurably helps," not as a precisely-tuned
-optimum.
+**Ensemble (the actual graded submission, superseded 2026-08-30): weighted
+average of 4 from-scratch/from-scratch-eligible models** (`src/ensemble.py`,
+`results/ensemble3/ensemble_result.json`) — grid-searched integer weights
+0-2 over a 12-model candidate pool (the original 9 plus the three models
+that came out of the round-5 deep-research follow-up:
+`crnn_nasrullah_faithful`, `sota_crnn_wide_arcface`, `crnn_nasrullah_asp`).
+Best: **sota_crnn×2 + short_chunk_cnn×1 + sota_crnn_wide_arcface×1** →
+**val top1=0.857, top3=0.913** — the grid search dropped `sota_crnn_wide`
+and `sota_crnn_norm` entirely (weight 0) in favor of `sota_crnn_wide_arcface`
+(the ArcFace-margin-head ablation, individually 0.801/0.896 — *not* the
+strongest single model, but still architecturally distinct enough from
+`sota_crnn`/`short_chunk_cnn` to earn ensemble weight), improving over the
+prior 9-model ensemble's 0.853/0.905 on both metrics. Neither
+`crnn_nasrullah_faithful` nor `crnn_nasrullah_asp` (the two directly-ported
+prior-year-architecture models) made the cut — see "Round-5 deep research"
+below for why that's actually informative, not just a null result. Directly
+regenerates `results/R13921031.json`. Same caveat as before, now larger: a
+12-model, 0-2 integer-weight grid search (3^12 ≈ 531,441 combinations)
+against only 231 val tracks carries meaningfully more overfit-to-val risk in
+the *weight selection* than the 9-model version did — the individual models'
+own numbers remain the more robust per-architecture comparison; read the
+ensemble weights as "a reasonable combination that measurably helps," not a
+precisely-tuned optimum.
+
+*(Prior version, for reference: 9-model pool, sota_crnn×2 + sota_crnn_wide×1
++ short_chunk_cnn×1 + sota_crnn_norm×1 → val top1=0.853, top3=0.905,
+`results/ensemble2/ensemble_result.json`.)*
 
 **Best single from-scratch model: `sota_crnn_wide`**
 — the winning architecture (Method 1 CRNN) scaled to 1.5x channel width via
@@ -129,13 +140,17 @@ architecture, all from the same starting point):
   (+0.4pp), plain AdamW+label-smoothing (mixed — see below), SSL pretraining
   (+0.4pp, within the "small positive" band Gemini's round-4 response
   predicted, nowhere near CLMR's 5.6pp reference point).
-- **Hurt**: attention pooling (-10.8pp vs. last-GRU-state — the opposite of
-  what our own prior-year run's design choice would predict, a genuine,
-  measured negative result, not assumed **on the backbone actually tested**;
-  see "Prior-year submission, revisited" below — this ablation bolted
-  attention onto `sota_crnn`'s small 32-hidden-dim unidirectional GRU, not
-  the larger bidirectional-256 GRU the prior run actually used, so it
-  doesn't yet settle whether attention pooling itself is the culprit), less
+- **Hurt**: attention pooling (-10.8pp vs. last-GRU-state on `sota_crnn`'s
+  narrow 32-hidden-dim unidirectional GRU — initially flagged as possibly a
+  capacity artifact rather than a clean refutation, since it wasn't the
+  prior-year run's actual bidirectional-256 backbone; **since re-tested on
+  a capacity-matched bidirectional GRU-256 backbone
+  (`crnn_nasrullah_faithful`, see "Round-5 deep research" below) and
+  attention pooling still underperforms `sota_crnn_wide`'s plain last-state
+  pooling** — the capacity-artifact hypothesis doesn't hold up under a
+  direct test, so this reads as real evidence against full-sequence
+  attention pooling for this task/data scale, not an artifact of the first
+  ablation's smaller backbone), less
   capacity (-10.8pp), SupCon
   auxiliary loss (-2.6pp vs. the AdamW/LS-only version), DropBlock (-5.6pp
   vs. AdamW/LS-only), SWA weight-averaging (-3.5pp vs. its own run's
@@ -202,8 +217,40 @@ directly on-topic for this dataset's own confound framing) and **Attentive
 Statistics Pooling** (`crnn_nasrullah_asp` — weighted mean+std instead of
 weighted-mean-only attention, on the *same* capacity-matched backbone as
 `crnn_nasrullah_faithful`, so it isolates the pooling-statistics question
-without the backbone-width confound). Both smoke-tested and running; results
-pending.
+without the backbone-width confound).
+
+**Results, and what they actually settle**: none of the three new models
+individually beat `sota_crnn_wide` (0.805/0.922) —
+`crnn_nasrullah_faithful` 0.779/0.866, `sota_crnn_wide_arcface` 0.801/0.896,
+`crnn_nasrullah_asp` 0.762/0.861. This is a *stronger* negative result than
+the original `sota_crnn_attn` ablation, not a weaker one: this time the
+attention-pooling architecture has the exact capacity (bidirectional
+GRU-256, matching the prior submission) both Deep Research responses said
+was the missing ingredient, and it still underperforms our much smaller
+`sota_crnn_wide`. The "attention pooling hurt because of backbone capacity"
+hypothesis doesn't hold up under this direct test — worth stating plainly
+rather than quietly dropping, since it's evidence *against* both engines'
+main theoretical claim on this question, not just an inconclusive result.
+ASP (mean+std) also underperformed plain attention pooling on the identical
+backbone (0.762 vs. 0.779) — more pooling statistics didn't help here either.
+
+That said, individually-weaker-but-architecturally-different still pays off
+in the ensemble: re-running the grid search over all 12 models (original 9 +
+these 3) found a new best combination — sota_crnn×2 + short_chunk_cnn×1 +
+sota_crnn_wide_arcface×1 → **val top1=0.857, top3=0.913**, up from the
+9-model ensemble's 0.853/0.905 (full writeup and the new graded-submission
+command above in the "Ensemble" section). Only `sota_crnn_wide_arcface`
+made the cut; the two faithfully-ported prior-year-architecture models
+(`crnn_nasrullah_faithful`, `crnn_nasrullah_asp`) did not — plausibly too
+correlated with the other CRNN-family members already in the pool despite
+their architectural differences, or just not accurate enough individually
+to earn weight in a 0-2 integer grid. Read together, this project's
+prior-year architecture (bidirectional GRU + attention pooling + 10s crops)
+does not appear to be a stronger model *on our official split*, even ported
+faithfully — the earlier caveat that the two projects' numbers aren't
+directly comparable (different val split) still stands, but we no longer
+have any measured evidence that the architecture itself is the reason for
+the apparent gap.
 
 **`fgnl`**: two retries (lr=1e-4, then no-augment-at-all) both under-
 performed the original pass-2 run's 52.4%... except the no-augment retry

@@ -23,12 +23,14 @@ Per the TA's clarification on NTU Cool (see `TA_discussion.md` #4 — Task 2
 requires training your own encoder *and* classifier from scratch; a
 pretrained encoder, frozen or fine-tuned, is only valid as a baseline
 comparison, not the graded submission), the graded Task-2 submission is a
-**weighted-average ensemble of 5 from-scratch models**: `sota_crnn`×2 +
-`sota_crnn_wide`×1 + `short_chunk_cnn`×1 + `sota_crnn_norm`×1 (weights
-grid-searched on val, see `results/ensemble2/ensemble_result.json`). Val:
-**85.3% top1 / 90.5% top3**, the best result among from-scratch-eligible
-options in this project (individually, the strongest single model is
-`sota_crnn_wide` at 80.5%/92.2% — a capacity-scaled variant of `sota_crnn`).
+**weighted-average ensemble of 4 from-scratch/from-scratch-eligible
+models**: `sota_crnn`×2 + `short_chunk_cnn`×1 + `sota_crnn_wide_arcface`×1
+(weights grid-searched on val, see
+`results/ensemble3/ensemble_result.json`). Val: **85.7% top1 / 91.3% top3**,
+the best result among from-scratch-eligible options in this project
+(individually, the strongest single model is `sota_crnn_wide` at
+80.5%/92.2% — a capacity-scaled variant of `sota_crnn`; it doesn't appear in
+the winning ensemble itself, but was central to finding that architecture).
 Reproduce the submitted `R13921031.json`:
 
     python -m src.ensemble --data_index_dir data/index \
@@ -41,11 +43,14 @@ Reproduce the submitted `R13921031.json`:
                  fgnl:results/fgnl/best.pt \
                  sample_cnn:results/sample_cnn/best.pt \
                  sota_crnn_norm:results/sota_crnn_norm/best.pt \
-        --out_dir results/ensemble2 --max_weight 2 \
+                 crnn_nasrullah_faithful:results/crnn_nasrullah_faithful/best.pt \
+                 sota_crnn_wide_arcface:results/sota_crnn_wide_arcface/best.pt \
+                 crnn_nasrullah_asp:results/crnn_nasrullah_asp/best.pt \
+        --out_dir results/ensemble3 --max_weight 2 \
         --test_out_path R13921031.json
 
-(`--models` includes 4 more candidates the grid search is free to weight to
-0 — it found the 5-model combination above on its own.) No pretrained
+(`--models` includes 8 more candidates the grid search is free to weight to
+0 — it found the 4-model combination above on its own.) No pretrained
 weights are downloaded for any component — every parameter in every model
 was trained on Artist20's train split. Output is
 `{"001": [top1, top2, top3], ...}` for all 233 test tracks, top-3 in
@@ -57,11 +62,13 @@ alone the same way as any other model below.
 Other from-scratch models (`sota_crnn`, `sota_crnn_wide`, `confound_crnn`,
 `crnn_zain`, `fgnl`, `short_chunk_cnn`, `sample_cnn`, `se_resnet`,
 `sota_crnn_norm`/`_attn`/`_narrow`/`_dropblock`/`_supcon`/`_swa`/
-`_ssl_finetune`, `confound_crnn_vocals`/`_remix` — ablations) can be run the
-same way by swapping `--model`/`--checkpoint`; see `MATERIALS.md` for the
-full results table and ablation-by-ablation writeup (12 variants of the
-winning architecture — capacity, pooling, normalization, optimizer,
-regularization, and SSL-pretraining ablations, each measured not assumed).
+`_ssl_finetune`, `confound_crnn_vocals`/`_remix`,
+`crnn_nasrullah_faithful`/`crnn_nasrullah_asp` (faithful port of our own
+prior-year submission's CRNN, and an attentive-statistics-pooling variant
+of it), `sota_crnn_wide_arcface` (ArcFace margin head) — ablations) can be
+run the same way by swapping `--model`/`--checkpoint`; see `MATERIALS.md`
+for the full results table and ablation-by-ablation writeup (17
+architectures/ablations total, each measured not assumed).
 
 **Baselines using pretrained encoders** (`ssl_frontend` = frozen MERT + a
 trained head, `speaker_frontend` = frozen ECAPA-TDNN speaker embedding + a

@@ -1,5 +1,46 @@
 # Experiment log
 
+## 2026-08-30 — round-5 ablations finished; new 12-model ensemble, new graded submission
+
+All three round-5 ablations finished:
+
+| model | val top1 | val top3 |
+|---|---|---|
+| `crnn_nasrullah_faithful` (faithful prior-year CRNN port, 10s + BiGRU-256 + attention) | 0.779 | 0.866 |
+| `sota_crnn_wide_arcface` (ArcFace margin head on `sota_crnn_wide`) | 0.801 | 0.896 |
+| `crnn_nasrullah_asp` (attentive statistics pooling, same backbone as the faithful port) | 0.762 | 0.861 |
+
+None individually beats `sota_crnn_wide` (0.805/0.922). This is a stronger
+negative result than the original `sota_crnn_attn` ablation: this time the
+backbone has exactly the capacity (bidirectional GRU-256) both round-5
+responses said was the missing ingredient for attention pooling to work, and
+it still underperforms our simpler architecture's plain last-GRU-state
+pooling. The "attention pooling only hurt because of a narrow backbone"
+hypothesis (ours, corroborated by both engines) does not survive this direct
+test — updated the ablation-takeaways bullet in MATERIALS.md to reflect
+that this is now evidence *against* full-sequence attention pooling for
+this task/data scale specifically, not an unresolved confound anymore. ASP
+(mean+std) also underperformed plain attention on the identical backbone.
+
+Re-ran the ensemble grid search (`src/ensemble.py`) over all 12 trained
+models (the original 9 + these 3), `results/ensemble3/`. New best: **sota_crnn×2
++ short_chunk_cnn×1 + sota_crnn_wide_arcface×1 → val top1=0.857, top3=0.913**
+— beats the previous 9-model ensemble (0.853/0.905) on both metrics, despite
+none of the 3 new individual models beating `sota_crnn_wide` outright.
+`sota_crnn_wide` and `sota_crnn_norm` both dropped to weight 0; only
+`sota_crnn_wide_arcface` from the new batch earned nonzero weight (1) —
+`crnn_nasrullah_faithful`/`crnn_nasrullah_asp` did not make the cut, despite
+being the most architecturally distinct of the three. Grid search now covers
+3^12 ≈ 531,441 weight combinations (up from 3^9 ≈ 19,683) — noted in
+MATERIALS.md that the overfit-to-val-in-weight-selection risk is
+correspondingly larger; the individual per-architecture numbers remain the
+more robust comparison.
+
+This is now the graded submission — regenerating `results/R13921031.json`
+via `src/ensemble.py`'s `--test_out_path` (in progress as of this entry);
+update `readme` and the checkpoint list once it lands.
+
+
 ## 2026-08-30 — round-5 responses read; ArcFace + ASP ablations launched
 
 Gemini and Qwen's round-5 responses landed
