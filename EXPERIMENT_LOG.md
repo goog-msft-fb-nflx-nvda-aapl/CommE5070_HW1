@@ -1,5 +1,32 @@
 # Experiment log
 
+## 2026-08-30 — all 14 ablation-queue jobs finished; new graded submission
+
+Results (val, full table in MATERIALS.md): `sota_crnn_wide` (channel_mult=1.5
+capacity sweep) is the new best single from-scratch model at **0.805/0.922**,
+beating the original `sota_crnn` (0.762/0.900). A 9-model weighted ensemble
+(`src/ensemble.py`, grid-searched weights) reaches **0.853/0.905** —
+sota_crnn×2 + sota_crnn_wide×1 + short_chunk_cnn×1 + sota_crnn_norm×1 — now
+the graded `R13921031.json` submission.
+
+Per-ablation results (all variants of the `sota_crnn` architecture):
+capacity up helped (+4.3pp), capacity down hurt (-10.8pp) — direct contradiction
+of Qwen round-3's uncited "smaller is better" claim, resolved by testing
+rather than trusting it; per-sample mel norm helped slightly (+0.4pp); SSL
+pretraining (round-4 recipe) helped slightly (+0.4pp, in-line with the
+"small positive, not a CLMR-sized jump" prior every round-4 response stated);
+attention pooling hurt badly (-10.8pp); SupCon hurt (-2.6pp on top of
+AdamW/LS); DropBlock hurt (-5.6pp on top of AdamW/LS); SWA's weight-averaged
+checkpoint was worse than its own run's best non-averaged checkpoint
+(-3.5pp). `fgnl` isolation confirmed SpecAugment specifically (not the LR)
+was what hurt it after the pass-2 fix — no-augment retry recovered to 0.710,
+matching crnn_zain.
+
+Score under the assignment formula (top1 + 0.5×top3) on the graded ensemble:
+0.853 + 0.5×0.905 = **1.305** (val), up from the original flagged-as-low
+1.083.
+
+
 ## 2026-08-30 — full ablation queue launched (14 items, all from the batch-2 list)
 
 Every item from the earlier master queue is now either done or running.
