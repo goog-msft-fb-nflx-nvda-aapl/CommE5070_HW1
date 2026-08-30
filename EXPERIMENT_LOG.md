@@ -1,5 +1,52 @@
 # Experiment log
 
+## 2026-08-31 — round-6 to-do list closed out: embedding geometry + pair-conditional Task-1 importance
+
+Closed the remaining two round-6 "not implemented" items, plus checked a
+third against prior work first.
+
+**Confusion-pair audits vs. vocal/accompaniment inference**: already done,
+not a gap — this is exactly what "Vocal separation: what a top1 tie is
+actually made of" (MATERIALS.md, `results/analysis/
+vocal_separation_attribution.json`) already covers. No new work needed.
+
+**Embedding geometry beyond t-SNE**: `src/analysis_embedding_geometry.py`
+(silhouette score over cosine distance, intra-/inter-class mean cosine
+distance; reuses `src/tsne_viz.py`'s track-level mean-pooled-embedding
+convention, extended with `wave10s`-kind support for `singer_senet`). Ran
+on 4 models spanning the accuracy range (`sota_crnn_wide`, `singer_senet`,
+`speaker_frontend`, `confound_crnn`) —
+`results/analysis/embedding_geometry.json`/`.png`. Key measured fact:
+silhouette/gap does not track downstream accuracy monotonically —
+`speaker_frontend` has the highest accuracy (0.952) but the lowest
+silhouette score (0.180) and smallest intra/inter gap (0.158) of the four;
+`sota_crnn_wide`/`singer_senet` tie exactly on accuracy (0.805) but differ
+visibly on silhouette (0.510 vs. 0.374). Reported as measured, no causal
+story attached beyond noting it's consistent with the already-established
+40/231-track disagreement between those two tied models.
+
+**Pair-conditional Task-1 feature importance**:
+`src/analysis_task1_pair_importance.py` — refits the SVM(RBF) to find the
+top-5 confused val pairs, then group-wise permutation importance (same 4
+groups as `src/analysis_feature_ablation.py`) restricted to each pair's own
+binary train/val subset, 30 repeats/group —
+`results/analysis/task1_pair_importance.json`/`.png`. `harmonic_tonal`
+(chroma+tonnetz) is the clearest positive signal for the madonna/roxette/
+aerosmith pairs; `timbre_mfcc` for beatles-vs-cure. Two pairs
+(aerosmith-vs-green_day; madonna-vs-suzanne_vega on timbre_mfcc) gave
+*negative* accuracy-drop estimates — reported honestly as expected noise on
+small (22-26 track) binary val subsets, not as evidence those features hurt.
+
+Both scripts smoke-tested (synthetic-data unit tests for the pure-math
+helpers, syntax + import checks) before running for real on gsm-gpu2; no
+tracebacks on the real run. Full tables and the "no unsupported
+interpretation" framing: MATERIALS.md's error-analysis section.
+
+This closes every item from round 6's Part 1/3 "not implemented" list —
+either done, or checked and found already covered / not applicable
+(per-album clustering, per-artist == per-album on this dataset's val split).
+
+
 ## 2026-08-31 — calibration analysis: all models systematically underconfident, not overconfident
 
 Continued down round-6's "not implemented this pass" list. Picked

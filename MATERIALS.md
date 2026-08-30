@@ -767,19 +767,78 @@ rather than silently dropped):
   variance within an artist (4 albums each) against val performance, which
   is a different, harder question than what was asked; not pursued this
   pass.
-- **Embedding geometry beyond t-SNE** (intra- vs. inter-artist cosine
-  distance, silhouette score) — all four independently warned that a t-SNE
-  plot alone isn't a rigorous representation-quality metric.
-- **Pair-conditional Task-1 feature importance** — global permutation
-  importance answers "what matters overall," not "what separates artist A
-  from artist B specifically"; all four gave a similar recipe (restrict to
-  the confused pair, permute one feature group at a time, report the
-  accuracy/AUC drop).
-- **Confusion-pair audits cross-checked against vocal-only/accompaniment-
-  only inference** — directly reusing this project's own `confound_crnn_vocals`
-  demucs pipeline, which all four correctly identified as this dataset's
-  actual precedent (Hsieh et al.'s own methodology), not a generic
-  error-analysis template.
+**Confusion-pair audits cross-checked against vocal-only/accompaniment-only
+inference**: already satisfied by prior work, not a new gap — see "Vocal
+separation: what a top1 tie is actually made of" above
+(`results/analysis/vocal_separation_attribution.json`), which is exactly
+this dataset's own precedent methodology (Hsieh et al.'s
+mixture-vs-vocals-only comparison) applied per-track and per-artist.
+
+**Embedding geometry beyond t-SNE (implemented, 2026-08-31)**:
+`src/analysis_embedding_geometry.py`,
+`results/analysis/embedding_geometry.json` + `.png`. Two standard,
+established diagnostics (silhouette score over cosine distance — Rousseeuw,
+*J. Comput. Appl. Math.* 1987; mean intra- vs. inter-class cosine distance)
+on track-level embeddings (mean-pooled across a track's chunks, same
+convention as the t-SNE plots), for four models spanning the accuracy range:
+
+| model | val accuracy | silhouette (cosine) | intra-class dist | inter-class dist | gap |
+|---|---|---|---|---|---|
+| sota_crnn_wide | 0.805 | **0.510** | 0.230 | 0.971 | **0.741** |
+| singer_senet | 0.805 | 0.374 | 0.297 | 0.713 | 0.416 |
+| confound_crnn | 0.693 | 0.344 | 0.260 | 0.892 | 0.632 |
+| speaker_frontend | 0.952 | 0.180 | 0.166 | 0.324 | 0.158 |
+
+Measured, reported without inferring a cause beyond what the numbers
+directly show: silhouette/gap does **not** track downstream accuracy
+monotonically across these four models. `speaker_frontend` has by far the
+highest accuracy (0.952) but the lowest silhouette score and the smallest
+intra/inter gap of the four — its embedding space is more tightly clustered
+overall (both distances are the smallest), yet a downstream classifier head
+still separates it accurately; conversely, `sota_crnn_wide` and
+`singer_senet` are *tied* on val accuracy (0.805) but have visibly different
+silhouette scores (0.510 vs. 0.374) and gaps (0.741 vs. 0.416) — consistent
+with, though not additional proof beyond, the already-measured fact that
+these two tied-accuracy models disagree on 40/231 val tracks (see the
+significance-testing section above). No causal architectural explanation is
+offered here beyond that consistency — we did not test *why* ECAPA-TDNN
+embeddings cluster more tightly, and don't claim to know without a specific
+source on that architecture's training objective.
+
+**Pair-conditional Task-1 feature importance (implemented, 2026-08-31)**:
+`src/analysis_task1_pair_importance.py`,
+`results/analysis/task1_pair_importance.json` + `.png`. For the SVM(RBF)'s
+top-5 most-confused val artist pairs (refit from the cached feature
+matrices; ranked by symmetric val misclassification count), fits a fresh
+binary SVM per pair and measures each of the four feature groups' (same
+groups as the global feature-ablation analysis above) permutation
+importance restricted to that pair's own train/val subset (Breiman-style
+group-wise permutation, 30 repeats per group):
+
+| pair | binary val n | binary baseline acc | most important group | drop |
+|---|---|---|---|---|
+| aerosmith vs. green_day | 26 | 0.538 | (none — all groups negative) | — |
+| madonna vs. suzanne_vega | 26 | 0.538 | harmonic_tonal | +0.068 |
+| aerosmith vs. roxette | 22 | 0.636 | harmonic_tonal | +0.065 |
+| madonna vs. roxette | 26 | 0.731 | harmonic_tonal | +0.195 |
+| beatles vs. cure | 23 | 0.739 | timbre_mfcc | +0.073 |
+
+Reported as measured, including the noisy/negative results rather than
+hiding them: for `aerosmith vs. green_day` and (on `timbre_mfcc`)
+`madonna vs. suzanne_vega`, permuting a feature group *raised* binary
+accuracy on that pair's val subset — a negative permutation-importance
+estimate is an expected, documented possibility on small held-out sets (here
+22-26 tracks per binary pair), not evidence the feature group is actively
+harmful; it means the estimate is dominated by noise for that pair, and
+should be read as "no reliable signal" rather than a substantive finding.
+Where a positive signal exists, `harmonic_tonal` (chroma + tonnetz) is the
+most consistently important group across the confused pairs involving
+madonna/roxette/aerosmith, and `timbre_mfcc` (MFCC + deltas) is what
+separates beatles from cure — reported as the measured pattern, with no
+further musical interpretation offered beyond what these group names
+already denote (chroma/tonnetz capture harmonic/tonal content; MFCC
+captures spectral-envelope/timbre), since we have no specific sourced claim
+connecting this to why these particular artists are confused.
 
 ## Bonus — Baseline 2, zero-shot audio-LLM
 Qwen2-Audio-7B-Instruct, prompted with a 15s clip + the closed list of 20

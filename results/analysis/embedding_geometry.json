@@ -1,0 +1,42 @@
+{
+  "sota_crnn_wide": {
+    "silhouette_score_cosine": 0.5095310807228088,
+    "intra_class_mean_cosine_distance": 0.2295655459165573,
+    "inter_class_mean_cosine_distance": 0.9709166288375854,
+    "inter_minus_intra_gap": 0.7413510829210281,
+    "n_intra_pairs": 1290,
+    "n_inter_pairs": 25275,
+    "n_tracks": 231,
+    "embed_dim": 48
+  },
+  "singer_senet": {
+    "silhouette_score_cosine": 0.37368154525756836,
+    "intra_class_mean_cosine_distance": 0.29645252227783203,
+    "inter_class_mean_cosine_distance": 0.7128340601921082,
+    "inter_minus_intra_gap": 0.4163815379142761,
+    "n_intra_pairs": 1290,
+    "n_inter_pairs": 25275,
+    "n_tracks": 231,
+    "embed_dim": 512
+  },
+  "speaker_frontend": {
+    "silhouette_score_cosine": 0.18054942786693573,
+    "intra_class_mean_cosine_distance": 0.16635364294052124,
+    "inter_class_mean_cosine_distance": 0.3242429494857788,
+    "inter_minus_intra_gap": 0.15788930654525757,
+    "n_intra_pairs": 1290,
+    "n_inter_pairs": 25275,
+    "n_tracks": 231,
+    "embed_dim": 192
+  },
+  "confound_crnn": {
+    "silhouette_score_cosine": 0.34403520822525024,
+    "intra_class_mean_cosine_distance": 0.2597522437572479,
+    "inter_class_mean_cosine_distance": 0.8920477628707886,
+    "inter_minus_intra_gap": 0.6322955191135406,
+    "n_intra_pairs": 1290,
+    "n_inter_pairs": 25275,
+    "n_tracks": 231,
+    "embed_dim": 288
+  }
+}
