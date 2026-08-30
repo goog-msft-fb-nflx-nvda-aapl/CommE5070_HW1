@@ -1,5 +1,42 @@
 # Experiment log
 
+## 2026-08-30 — batch 2: 11 concurrent jobs launched (user left GPU running unattended)
+
+All on gsm-gpu2, tmux session `hw1_singer`, epochs=300/patience=40 (patience
+60 for SWA) unless noted, all with `--optimizer adamw --label_smoothing 0.1`
+unless noted otherwise:
+
+| window | model | notes |
+|---|---|---|
+| short_chunk_cnn | ShortChunkCNN_Res | plain (Adam, no LS) — new arch |
+| sample_cnn | SampleCNN | plain — new arch |
+| fgnl_lr4 (running noaug script) | fgnl | `--no_augment`, isolates whether SpecAugment specifically hurt fgnl |
+| sota_adamw_ls | sota_crnn | AdamW + label_smoothing ablation vs. the plain-Adam 0.762 result |
+| se_resnet | SEResNet | new arch (`src/models/se_resnet.py`), SE gating on Res_2d, per user's prior-run design |
+| crnn_attn | sota_crnn_attn (`CRNN_Attn`) | attention pooling instead of last-GRU-state, per user's prior-run design |
+| crnn_narrow | sota_crnn_narrow | channel_mult=0.5 capacity sweep |
+| crnn_wide | sota_crnn_wide | channel_mult=1.5 capacity sweep |
+| crnn_norm | sota_crnn_norm | per-sample mel normalization, per user's prior-run pipeline |
+| sota_swa | sota_crnn + SWA | patience=60, swa_start_frac=0.7 |
+
+Code added this batch: `src/ensemble.py` (weighted grid-search ensemble),
+`src/analysis_tta_comparison.py` (single/random-10/full-tile TTA
+comparison), `SqueezeExcite2d`/`Res_2d_SE` in `common.py`,
+`src/models/se_resnet.py`, `CRNN_Attn`/capacity-mult/normalize_mel in
+`sota_cnn.py`, `--optimizer`/`--label_smoothing`/`--swa*` flags in
+`train.py`. One bug caught by smoke-testing before launch: `x.view()` on a
+non-contiguous tensor in the normalize_mel path — fixed to `.reshape()`
+before any real run used it.
+
+**Not yet implemented** (queued, not skipped): DropBlock, supervised
+contrastive (SupCon) auxiliary loss, SimCLR/BYOL self-supervised
+pretraining (round-4 recipe). Picking up as GPU slots free / time allows.
+
+Once each job's summary.json lands, results get folded into MATERIALS.md
+with the full comparison table — check `results/<name>/summary.json` for
+raw numbers before that happens.
+
+
 ## 2026-08-30 — ablation queue results (batch 1)
 
 1. **Ensemble** (`src/ensemble.py`, `results/ensemble/ensemble_result.json`):
