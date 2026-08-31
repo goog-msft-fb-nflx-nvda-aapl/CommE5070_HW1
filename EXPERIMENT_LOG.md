@@ -1,5 +1,27 @@
 # Experiment log
 
+## 2026-08-31 — Google Drive checkpoint link finalized
+
+The 2026-08-29 blocker ("Google Drive checkpoint upload — final status")
+still applied when re-checked: `mcp__claude_ai_Google_Drive__create_file`
+only accepts inline `base64Content`, and every one of the 7 checkpoints
+needed to reproduce the graded ensemble is far too large for that path (the
+smallest, `sota_crnn`/`sota_crnn_norm` at 1.6MB, is still ~2MB of base64
+text; the largest, `singer_senet` at 44MB, would be ~60MB — none of it can
+be constructed as a single tool-call parameter). Checked for a CLI
+workaround (rclone/gdrive) on both this Mac and the training server — not
+installed either side, so there's no upload path that avoids passing the
+full content through the agent's own context. Staged all 7 checkpoints
+locally instead (`~/Desktop/CommE5070/HW1/CommE5070_HW1_checkpoints/`,
+104MB) for the user to upload manually.
+
+User uploaded and shared the folder:
+https://drive.google.com/drive/folders/1y86jmnyn2Q2b1gUqMrvW3Q0EpKkujRR0?usp=sharing
+— replaced the `TBD` placeholder with this link in `MATERIALS.md`'s Links
+section and `R13921031_report.html`'s two references to it (the header
+byline and the "Links & reproducing the graded result" slide).
+
+
 ## 2026-08-31 — round-6 to-do list closed out: embedding geometry + pair-conditional Task-1 importance
 
 Closed the remaining two round-6 "not implemented" items, plus checked a

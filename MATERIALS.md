@@ -1016,5 +1016,10 @@ the full citation-quality breakdown across all four responses.
 
 ## Links
 - GitHub: https://github.com/goog-msft-fb-nflx-nvda-aapl/CommE5070_HW1
-- Checkpoint (Google Drive): TBD — needs a manual upload, see EXPERIMENT_LOG.md
-  ("Google Drive checkpoint upload — final status")
+- Checkpoints (Google Drive, open access): https://drive.google.com/drive/folders/1y86jmnyn2Q2b1gUqMrvW3Q0EpKkujRR0?usp=sharing
+  — the 7 checkpoints needed to reproduce the graded ensemble (`sota_crnn`,
+  `sota_crnn_wide`, `sample_cnn`, `sota_crnn_norm`, `crnn_nasrullah_faithful`,
+  `crnn_nasrullah_asp`, `singer_senet`); uploaded manually since the
+  available Drive tooling only accepts inline content and these files are
+  well beyond what fits that path — see EXPERIMENT_LOG.md ("Google Drive
+  checkpoint upload — final status") for why.
