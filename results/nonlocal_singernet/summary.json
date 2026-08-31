@@ -1,0 +1,6 @@
+{
+  "model": "nonlocal_singernet",
+  "best_epoch": 87,
+  "top1": 0.7748917748917749,
+  "top3": 0.8744588744588745
+}
